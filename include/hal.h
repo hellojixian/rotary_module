@@ -16,18 +16,15 @@
 
 #define VOLTAGE_SENSOR_PIN PC2
 
-// 音符频率定义 (Hz)
-#define NOTE_C4  262
-#define NOTE_D4  294
-#define NOTE_E4  330
-#define NOTE_F4  349
-#define NOTE_G4  392
-#define NOTE_A4  440
-#define NOTE_B4  494
-#define NOTE_C5  523
-#define NOTE_D5  587
-#define NOTE_E5  659
-#define NOTE_F5  698
-#define NOTE_G5  784
+// #define STEP_MOTOR_INT4_PIN PE0
+// #define STEP_MOTOR_INT2_PIN PE1
+// #define STEP_MOTOR_INT1_PIN PE2
+// #define STEP_MOTOR_INT3_PIN PE3
+
+#define STEP_MOTOR_INT1_PIN PE0
+#define STEP_MOTOR_INT2_PIN PE1
+#define STEP_MOTOR_INT3_PIN PE2
+#define STEP_MOTOR_INT4_PIN PE3
+
 
 #endif // HAL_H
