@@ -6,8 +6,8 @@ static stepper_motor_t motor_state;
 
 // 速度延时配置 (微秒) - 优化为平滑运行和降低发热
 static const unsigned long speed_delays[] = {
-    8000,  // SPEED_LOW: 2ms延时 (500步/秒，平滑稳定，低发热)
-    800    // SPEED_HIGH: 0.8ms延时 (1250步/秒，快速但平滑)
+    15000,  // SPEED_LOW: 2ms延时 (500步/秒，平滑稳定，低发热)
+    500    // SPEED_HIGH: 0.8ms延时 (1250步/秒，快速但平滑)
 };
 
 // 28BYJ-48 半步序列 (8步，平滑但扭矩较小)
