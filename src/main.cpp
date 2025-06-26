@@ -6,6 +6,7 @@
 #include "buzzer.h"
 #include "keys.h"
 #include "voltage.h"
+#include "stepper_motor.h"
 
 // 创建显示对象
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1); // -1 表示不使用复位引脚
@@ -45,6 +46,7 @@ void setup() {
   buzzer_init();
   keys_init();
   voltage_sensor_init();
+  stepper_motor_init();
 
   // 播放启动旋律
   play_startup_melody();
@@ -58,6 +60,9 @@ void setup() {
 void loop() {
   // 检查按键状态
   check_keys();
+
+  // 更新步进电机状态
+  stepper_motor_update();
 
   // 更新电压显示
   update_voltage_display();
