@@ -9,8 +9,8 @@
 #define SCREEN_HEIGHT 32
 
 #define BUZZER_PIN 9 //PB1
-#define KEY0_PIN PD3
-#define KEY1_PIN PD4
+#define KEY0_PIN 3 //PD3
+#define KEY1_PIN 4 //PD4
 #define KEY2_PIN PE4
 #define KEY3_PIN PE5
 
@@ -18,5 +18,10 @@
 void buzzer_init();
 void buzzer_tone(int frequency, int duration);
 void play_startup_melody();
+
+// 按键函数声明
+void keys_init();
+void check_keys();
+void handle_key_press(int key_num);
 
 #endif // HAL_H
