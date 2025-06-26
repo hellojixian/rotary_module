@@ -14,14 +14,20 @@
 #define KEY2_PIN PE4
 #define KEY3_PIN PE5
 
-// 蜂鸣器函数声明
-void buzzer_init();
-void buzzer_tone(int frequency, int duration);
-void play_startup_melody();
+#define VOLTAGE_SENSOR_PIN PC2
 
-// 按键函数声明
-void keys_init();
-void check_keys();
-void handle_key_press(int key_num);
+// 音符频率定义 (Hz)
+#define NOTE_C4  262
+#define NOTE_D4  294
+#define NOTE_E4  330
+#define NOTE_F4  349
+#define NOTE_G4  392
+#define NOTE_A4  440
+#define NOTE_B4  494
+#define NOTE_C5  523
+#define NOTE_D5  587
+#define NOTE_E5  659
+#define NOTE_F5  698
+#define NOTE_G5  784
 
 #endif // HAL_H
