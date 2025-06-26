@@ -65,8 +65,8 @@ void update_voltage_display() {
     }
 
     // 串口输出电压信息
-    Serial.print("Battery Voltage: ");
-    Serial.print(battery_voltage, 2);
-    Serial.println("V");
+    // Serial.print("Battery Voltage: ");
+    // Serial.print(battery_voltage, 2);
+    // Serial.println("V");
   }
 }
