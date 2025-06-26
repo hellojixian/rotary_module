@@ -4,8 +4,10 @@
 #include "hal.h"
 
 // 步进电机参数定义
-#define STEPS_PER_REVOLUTION 2048  // 28BYJ-48 每转步数 (64*32)
-#define STEP_SEQUENCE_LENGTH 8     // 8步序列长度
+#define STEPS_PER_REVOLUTION_HALF 2048  // 28BYJ-48 每转步数 (半步模式)
+#define STEPS_PER_REVOLUTION_FULL 1024  // 28BYJ-48 每转步数 (全步模式)
+#define STEP_SEQUENCE_LENGTH_HALF 8     // 半步序列长度
+#define STEP_SEQUENCE_LENGTH_FULL 4     // 全步序列长度
 
 // 转动方向定义
 typedef enum {
@@ -19,11 +21,18 @@ typedef enum {
     SPEED_HIGH = 1
 } motor_speed_t;
 
+// 步进模式定义
+typedef enum {
+    STEP_MODE_HALF = 0,    // 半步模式（平滑，扭矩较小）
+    STEP_MODE_FULL = 1     // 全步模式（扭矩大）
+} step_mode_t;
+
 // 步进电机状态结构体
 typedef struct {
     int current_step;           // 当前步数位置
     motor_direction_t direction; // 转动方向
     motor_speed_t speed;        // 转动速度
+    step_mode_t step_mode;      // 步进模式
     bool is_running;            // 是否正在运行
     unsigned long last_step_time; // 上次步进时间
     int target_steps;           // 目标步数
@@ -34,12 +43,20 @@ typedef struct {
 void stepper_motor_init();
 void stepper_motor_set_speed(motor_speed_t speed);
 void stepper_motor_set_direction(motor_direction_t direction);
+void stepper_motor_set_step_mode(step_mode_t mode);
 void stepper_motor_rotate_angle(float angle);
 void stepper_motor_rotate_steps(int steps);
 void stepper_motor_start();
 void stepper_motor_stop();
 void stepper_motor_update();
 bool stepper_motor_is_running();
+
+// 扭矩优化函数
+void stepper_motor_enable_high_torque();
+void stepper_motor_disable_high_torque();
+
+// 发热控制函数
+void stepper_motor_enable_low_heat_mode();
 
 // 低级控制函数
 void stepper_motor_step();

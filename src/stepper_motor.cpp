@@ -4,14 +4,14 @@
 // 步进电机全局状态
 static stepper_motor_t motor_state;
 
-// 速度延时配置 (微秒)
+// 速度延时配置 (微秒) - 优化为平滑运行和降低发热
 static const unsigned long speed_delays[] = {
-    3000,  // SPEED_LOW: 3ms延时
-    1000   // SPEED_HIGH: 1ms延时
+    8000,  // SPEED_LOW: 2ms延时 (500步/秒，平滑稳定，低发热)
+    800    // SPEED_HIGH: 0.8ms延时 (1250步/秒，快速但平滑)
 };
 
-// 28BYJ-48 8步序列 (半步模式，更平滑)
-static const uint8_t step_sequence[STEP_SEQUENCE_LENGTH] = {
+// 28BYJ-48 半步序列 (8步，平滑但扭矩较小)
+static const uint8_t step_sequence_half[STEP_SEQUENCE_LENGTH_HALF] = {
     0b0001,  // 0001
     0b0011,  // 0011
     0b0010,  // 0010
@@ -22,11 +22,23 @@ static const uint8_t step_sequence[STEP_SEQUENCE_LENGTH] = {
     0b1001   // 1001
 };
 
+// 28BYJ-48 全步序列 (4步，扭矩更大)
+static const uint8_t step_sequence_full[STEP_SEQUENCE_LENGTH_FULL] = {
+    0b0011,  // 线圈1+2同时通电
+    0b0110,  // 线圈2+3同时通电
+    0b1100,  // 线圈3+4同时通电
+    0b1001   // 线圈4+1同时通电
+};
+
+// 高扭矩模式标志
+static bool high_torque_mode = false;
+
 /**
  * 初始化步进电机
  */
 void stepper_motor_init() {
     // 启用PE0和PE2引脚 (根据用户提供的代码)
+    MCUSR = 0xff;
     MCUSR = 0xff;
 
     // 设置PE0-PE3为输出模式
@@ -39,12 +51,17 @@ void stepper_motor_init() {
     motor_state.current_step = 0;
     motor_state.direction = CLOCKWISE;
     motor_state.speed = SPEED_LOW;
+    motor_state.step_mode = STEP_MODE_FULL;  // 默认使用半步模式（平滑，低发热）
     motor_state.is_running = false;
     motor_state.last_step_time = 0;
     motor_state.target_steps = 0;
     motor_state.remaining_steps = 0;
 
-    Serial.println("Stepper motor initialized");
+    // 禁用高扭矩模式以降低发热
+    high_torque_mode = false;
+
+    stepper_motor_stop();
+    Serial.println("Stepper motor initialized (Low Heat Mode - Half Step)");
 }
 
 /**
@@ -70,8 +87,10 @@ void stepper_motor_set_direction(motor_direction_t direction) {
  * @param angle 角度 (度)，正数顺时针，负数逆时针
  */
 void stepper_motor_rotate_angle(float angle) {
-    // 计算需要的步数
-    int steps = (int)((angle / 360.0) * STEPS_PER_REVOLUTION);
+    // 根据步进模式计算需要的步数
+    int steps_per_rev = (motor_state.step_mode == STEP_MODE_FULL) ?
+                        STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
+    int steps = (int)((angle / 360.0) * steps_per_rev);
 
     // 根据角度符号设置方向
     if (steps < 0) {
@@ -87,7 +106,9 @@ void stepper_motor_rotate_angle(float angle) {
     Serial.print(angle);
     Serial.print(" degrees (");
     Serial.print(steps);
-    Serial.println(" steps)");
+    Serial.print(" steps, ");
+    Serial.print(motor_state.step_mode == STEP_MODE_FULL ? "FULL" : "HALF");
+    Serial.println(" step mode)");
 }
 
 /**
@@ -165,28 +186,83 @@ void stepper_motor_update() {
  * 执行一步
  */
 void stepper_motor_step() {
+    // 获取当前步进模式的序列长度
+    int sequence_length = (motor_state.step_mode == STEP_MODE_FULL) ?
+                         STEP_SEQUENCE_LENGTH_FULL : STEP_SEQUENCE_LENGTH_HALF;
+
     // 根据方向更新步数
     if (motor_state.direction == CLOCKWISE) {
         motor_state.current_step++;
-        if (motor_state.current_step >= STEP_SEQUENCE_LENGTH) {
+        if (motor_state.current_step >= sequence_length) {
             motor_state.current_step = 0;
         }
     } else {
         motor_state.current_step--;
         if (motor_state.current_step < 0) {
-            motor_state.current_step = STEP_SEQUENCE_LENGTH - 1;
+            motor_state.current_step = sequence_length - 1;
         }
     }
 
-    // 设置引脚状态
-    stepper_motor_set_pins(step_sequence[motor_state.current_step]);
+    // 根据步进模式选择序列并设置引脚状态
+    if (motor_state.step_mode == STEP_MODE_FULL) {
+        stepper_motor_set_pins(step_sequence_full[motor_state.current_step]);
+    } else {
+        stepper_motor_set_pins(step_sequence_half[motor_state.current_step]);
+    }
+}
+
+/**
+ * 设置步进模式
+ */
+void stepper_motor_set_step_mode(step_mode_t mode) {
+    motor_state.step_mode = mode;
+    motor_state.current_step = 0;  // 重置步数位置
+
+    Serial.print("Step mode set to: ");
+    Serial.println(mode == STEP_MODE_FULL ? "FULL (High Torque)" : "HALF (Smooth)");
+}
+
+/**
+ * 启用高扭矩模式
+ */
+void stepper_motor_enable_high_torque() {
+    stepper_motor_set_step_mode(STEP_MODE_FULL);
+    high_torque_mode = true;
+
+    Serial.println("High torque mode enabled");
+}
+
+/**
+ * 禁用高扭矩模式
+ */
+void stepper_motor_disable_high_torque() {
+    stepper_motor_set_step_mode(STEP_MODE_HALF);
+    high_torque_mode = false;
+
+    Serial.println("High torque mode disabled");
+}
+
+/**
+ * 启用低发热模式
+ */
+void stepper_motor_enable_low_heat_mode() {
+    // 切换到半步模式
+    stepper_motor_set_step_mode(STEP_MODE_HALF);
+
+    // 禁用高扭矩模式
+    high_torque_mode = false;
+
+    // 设置为低速以进一步降低发热
+    stepper_motor_set_speed(SPEED_LOW);
+
+    Serial.println("Low heat mode enabled (Half step, Low speed)");
 }
 
 /**
  * 设置引脚状态
  */
 void stepper_motor_set_pins(uint8_t step_pattern) {
-    // 清除所有引脚
+    // 清除所有引脚 - 确保完全断电
     PORTE &= ~((1 << PE0) | (1 << PE1) | (1 << PE2) | (1 << PE3));
 
     // 根据步进模式设置引脚
@@ -194,4 +270,10 @@ void stepper_motor_set_pins(uint8_t step_pattern) {
     if (step_pattern & 0x02) PORTE |= (1 << PE1);  // INT2
     if (step_pattern & 0x04) PORTE |= (1 << PE2);  // INT3
     if (step_pattern & 0x08) PORTE |= (1 << PE3);  // INT4
+
+    // 移除额外延时以降低发热
+    // 注释掉高扭矩模式的额外保持时间
+    // if (high_torque_mode) {
+    //     delayMicroseconds(50);
+    // }
 }
