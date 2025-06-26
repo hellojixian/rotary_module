@@ -21,5 +21,9 @@
 #define STEP_MOTOR_INT3_PIN PE2
 #define STEP_MOTOR_INT4_PIN PE3
 
+// to detect if camera control cable has been plugged in, if plugged then it should be LOW, the pin should be INPUT_PULLUP
+#define CAMERA_TRIGGER_SENSOR_PIN PD2
+#define CAMERA_SHUTTER_TRIGGER_PIN PC0
+#define CAMERA_FOCUS_TRIGGER_PIN PC1
 
 #endif // HAL_H
