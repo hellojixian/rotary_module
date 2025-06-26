@@ -71,16 +71,6 @@ void check_keys() {
   bool key2_current = PINE & (1 << KEY2_PIN);
   bool key3_current = PINE & (1 << KEY3_PIN);
 
-  pinMode(KEY0_PIN, INPUT);
-  Serial.print("key0: ");
-  Serial.print(key0_current);
-  Serial.print(". key1: ");
-  Serial.print(key1_current);
-  Serial.print("  key2: ");
-  Serial.print(key2_current);
-  Serial.print("  key3: ");
-  Serial.println(key3_current);
-
   // 检测按键0（上升沿触发）
   if (key0_last_state == LOW && key0_current == HIGH) {
     handle_key_press(0);
