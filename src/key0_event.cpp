@@ -9,7 +9,7 @@ void key0_pressed() {
   buzzer_tone(1800, 200);
 
   // 按键0功能：电机低速转动
-  Serial.println("Key 0 pressed: Motor low speed rotation");
+  Serial.println(F("Key 0 pressed: Motor low speed rotation"));
 
   if (stepper_motor_is_running()) {
     // 如果电机正在运行，停止电机

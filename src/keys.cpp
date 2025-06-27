@@ -35,9 +35,9 @@ void handle_key_press(int key_num) {
   display.setCursor(10, 8);
 
   // 显示按键信息
-  display.print("KEY");
+  display.print(F("KEY"));
   display.print(key_num);
-  display.println(" PRESSED");
+  display.println(F(" PRESSED"));
 
   // 更新显示
   display.display();
@@ -58,9 +58,9 @@ void handle_key_press(int key_num) {
       break;
   }
 
-  Serial.print("Key ");
+  Serial.print(F("Key "));
   Serial.print(key_num);
-  Serial.println(" pressed");
+  Serial.println(F(" pressed"));
 }
 
 // 检查按键状态

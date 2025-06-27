@@ -8,7 +8,7 @@ void key3_pressed() {
   buzzer_tone(2100, 200);
 
   // 在这里添加按键3的特定功能
-  Serial.println("Key 3 specific function executed");
+  Serial.println(F("Key 3 specific function executed"));
 
   // 可以在这里添加更多按键3的专属功能
   // 例如：重置系统、进入配置模式等

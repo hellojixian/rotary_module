@@ -58,7 +58,7 @@ void setup() {
   // 初始读取电池电压
   battery_voltage = read_battery_voltage();
 
-  Serial.println("System initialized successfully!");
+  Serial.println(F("System initialized successfully!"));
 }
 
 void loop() {

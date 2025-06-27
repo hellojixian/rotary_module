@@ -61,7 +61,7 @@ void stepper_motor_init() {
     high_torque_mode = false;
 
     stepper_motor_stop();
-    Serial.println("Stepper motor initialized (Low Heat Mode - Half Step)");
+    Serial.println(F("Stepper motor initialized (Low Heat Mode - Half Step)"));
 }
 
 /**
@@ -69,8 +69,8 @@ void stepper_motor_init() {
  */
 void stepper_motor_set_speed(motor_speed_t speed) {
     motor_state.speed = speed;
-    Serial.print("Motor speed set to: ");
-    Serial.println(speed == SPEED_LOW ? "LOW" : "HIGH");
+    Serial.print(F("Motor speed set to: "));
+    Serial.println(speed == SPEED_LOW ? F("LOW") : F("HIGH"));
 }
 
 /**
@@ -78,8 +78,8 @@ void stepper_motor_set_speed(motor_speed_t speed) {
  */
 void stepper_motor_set_direction(motor_direction_t direction) {
     motor_state.direction = direction;
-    Serial.print("Motor direction set to: ");
-    Serial.println(direction == CLOCKWISE ? "CLOCKWISE" : "COUNTER_CLOCKWISE");
+    Serial.print(F("Motor direction set to: "));
+    Serial.println(direction == CLOCKWISE ? F("CLOCKWISE") : F("COUNTER_CLOCKWISE"));
 }
 
 /**
@@ -102,13 +102,13 @@ void stepper_motor_rotate_angle(float angle) {
 
     stepper_motor_rotate_steps(steps);
 
-    Serial.print("Rotating ");
+    Serial.print(F("Rotating "));
     Serial.print(angle);
-    Serial.print(" degrees (");
+    Serial.print(F(" degrees ("));
     Serial.print(steps);
-    Serial.print(" steps, ");
-    Serial.print(motor_state.step_mode == STEP_MODE_FULL ? "FULL" : "HALF");
-    Serial.println(" step mode)");
+    Serial.print(F(" steps, "));
+    Serial.print(motor_state.step_mode == STEP_MODE_FULL ? F("FULL") :F( "HALF"));
+    Serial.println(F(" step mode)"));
 }
 
 /**
@@ -122,9 +122,9 @@ void stepper_motor_rotate_steps(int steps) {
     motor_state.is_running = true;
     motor_state.last_step_time = micros();
 
-    Serial.print("Starting rotation: ");
+    Serial.print(F("Starting rotation: "));
     Serial.print(steps);
-    Serial.println(" steps");
+    Serial.println(F(" steps"));
 }
 
 /**
@@ -135,7 +135,7 @@ void stepper_motor_start() {
     motor_state.remaining_steps = -1; // -1表示连续转动
     motor_state.last_step_time = micros();
 
-    Serial.println("Motor started (continuous rotation)");
+    Serial.println(F("Motor started (continuous rotation)"));
 }
 
 /**
@@ -148,7 +148,7 @@ void stepper_motor_stop() {
     // 关闭所有引脚
     PORTE &= ~((1 << PE0) | (1 << PE1) | (1 << PE2) | (1 << PE3));
 
-    Serial.println("Motor stopped");
+    Serial.println(F("Motor stopped"));
 }
 
 /**
@@ -218,8 +218,8 @@ void stepper_motor_set_step_mode(step_mode_t mode) {
     motor_state.step_mode = mode;
     motor_state.current_step = 0;  // 重置步数位置
 
-    Serial.print("Step mode set to: ");
-    Serial.println(mode == STEP_MODE_FULL ? "FULL (High Torque)" : "HALF (Smooth)");
+    Serial.print(F("Step mode set to: "));
+    Serial.println(mode == STEP_MODE_FULL ? F("FULL (High Torque)") : F("HALF (Smooth)"));
 }
 
 /**
@@ -229,7 +229,7 @@ void stepper_motor_enable_high_torque() {
     stepper_motor_set_step_mode(STEP_MODE_FULL);
     high_torque_mode = true;
 
-    Serial.println("High torque mode enabled");
+    Serial.println(F("High torque mode enabled"));
 }
 
 /**
@@ -239,7 +239,7 @@ void stepper_motor_disable_high_torque() {
     stepper_motor_set_step_mode(STEP_MODE_HALF);
     high_torque_mode = false;
 
-    Serial.println("High torque mode disabled");
+    Serial.println(F("High torque mode disabled"));
 }
 
 /**
@@ -255,7 +255,7 @@ void stepper_motor_enable_low_heat_mode() {
     // 设置为低速以进一步降低发热
     stepper_motor_set_speed(SPEED_LOW);
 
-    Serial.println("Low heat mode enabled (Half step, Low speed)");
+    Serial.println(F("Low heat mode enabled (Half step, Low speed)"));
 }
 
 /**
@@ -271,9 +271,7 @@ void stepper_motor_set_pins(uint8_t step_pattern) {
     if (step_pattern & 0x04) PORTE |= (1 << PE2);  // INT3
     if (step_pattern & 0x08) PORTE |= (1 << PE3);  // INT4
 
-    // 移除额外延时以降低发热
-    // 注释掉高扭矩模式的额外保持时间
-    // if (high_torque_mode) {
-    //     delayMicroseconds(50);
-    // }
+    if (high_torque_mode) {
+        delayMicroseconds(50);
+    }
 }
