@@ -7,39 +7,17 @@
 #include "keys.h"
 #include "voltage.h"
 #include "stepper_motor.h"
+#include "clock_verify.h"
 
 // 创建显示对象
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1); // -1 表示不使用复位引脚
+
 
 void setup() {
   // 初始化串口调试（可选）
   Serial.begin(115200);
 
-#if ((F_CPU) == 1000000)
-  #warning F_CPU = 1MHz
-  Serial.println("1MHz");
-  #elif ((F_CPU) == 2000000)
-  #warning F_CPU = 2MHz
-  Serial.println("2MHz");
-  #elif ((F_CPU) == 4000000)
-  #warning F_CPU = 4MHz
-  Serial.println("4MHz");
-  #elif ((F_CPU) == 8000000)
-  #warning F_CPU = 8MHz
-  Serial.println("8MHz");
-  #elif ((F_CPU) == 16000000)
-  #warning F_CPU = 16MHz
-  Serial.println("16MHz");
-  #elif ((F_CPU) == 32000000)
-  #warning F_CPU = 32MHz
-  Serial.println("32MHz");
-  #endif
-
-  #if ((CLOCK_SOURCE) == 1)
-  Serial.println("internal clock");
-  #elif ((CLOCK_SOURCE) == 2)
-  Serial.println("external clock");
-  #endif
+  verify_clock();
 
   // 初始化 I2C 总线（默认使用 Wire，PC4 = SDA, PC5 = SCL）
   Wire.begin();
