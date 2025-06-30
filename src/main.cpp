@@ -57,11 +57,6 @@ void setup() {
 
   // 播放启动旋律
   play_startup_melody();
-
-  // 初始读取电池电压
-  battery_voltage = read_battery_voltage();
-
-
 }
 
 void loop() {

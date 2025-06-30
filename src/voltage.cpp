@@ -40,37 +40,11 @@ void display_battery_voltage() {
   display.print("V");
 }
 
-// 更新电压显示函数
-void update_voltage_display() {
-  // 每2秒读取一次电池电压
+
+void update_voltage_reading() {
   unsigned long current_time = millis();
-  if (current_time - last_voltage_check >= 2000) {
+  if (current_time - last_voltage_check >= 500) {
     battery_voltage = read_battery_voltage();
     last_voltage_check = current_time;
-
-    // 更新显示（如果没有按键被按下）
-    if (!((PIND & (1 << KEY0_PIN)) || (PIND & (1 << KEY1_PIN)) ||
-          (PINE & (1 << KEY2_PIN)) || (PINE & (1 << KEY3_PIN)))) {
-      display.clearDisplay();
-
-      // 显示主界面文本
-      display.setTextColor(SSD1306_WHITE);
-      display.setTextSize(1);
-      display.setCursor(0, 10);
-      display.println(F("Hello, World! Buzzer"));
-
-      // 显示电池电压
-      display_battery_voltage();
-
-      // 显示相机状态
-      camera_display_status();
-
-      display.display();
-    }
-
-    // 串口输出电压信息
-    // Serial.print("Battery Voltage: ");
-    // Serial.print(battery_voltage, 2);
-    // Serial.println("V");
   }
 }

@@ -72,13 +72,13 @@ void ui_draw_camera_status(void) {
     camera_status_t status = camera_get_status();
     switch (status) {
         case CAMERA_DISCONNECTED:
-            display.print(F("No Camera"));
+            display.print(F("3D Scan Mode"));
             break;
         case CAMERA_CABLE_CONNECTED:
-            display.print(F("Cable"));
+            display.print(F("Connecting..."));
             break;
         case CAMERA_FULLY_CONNECTED:
-            display.print(F("Camera OK"));
+            display.print(F("Camera Mode"));
             break;
     }
 }
@@ -91,15 +91,9 @@ void ui_draw_battery_status(void) {
     display.setTextColor(SSD1306_WHITE);
 
     // 计算电池电压显示位置（右对齐）
-    char voltage_str[8];
-    snprintf(voltage_str, sizeof(voltage_str), "%.1fV", battery_voltage);
-
-    // 计算文本宽度并右对齐
-    int16_t x1, y1;
-    uint16_t w, h;
-    display.getTextBounds(voltage_str, 0, 0, &x1, &y1, &w, &h);
-    display.setCursor(SCREEN_WIDTH - w, 0);
-    display.print(voltage_str);
+    display.setCursor(98, 0);  // 右上角位置
+    display.print(battery_voltage, 2);
+    display.print("V");
 }
 
 /**
