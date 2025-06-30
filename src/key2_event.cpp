@@ -12,9 +12,8 @@ void key2_pressed() {
   Serial.println(F("Key 2 pressed: Camera focus control"));
 
   if (camera_get_status() == CAMERA_FULLY_CONNECTED) {
-    // 触发对焦
+    // 触发对焦（非阻塞）
     camera_trigger_focus();
-    camera_release_triggers();
   } else {
     Serial.println(F("Camera not ready for focus"));
   }

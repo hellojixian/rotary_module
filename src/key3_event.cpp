@@ -14,7 +14,6 @@ void key3_pressed() {
   if (camera_get_status() == CAMERA_FULLY_CONNECTED) {
     // 触发对焦
     camera_trigger_shutter();
-    camera_release_triggers();
   } else {
     Serial.println(F("Camera not ready for focus"));
   }

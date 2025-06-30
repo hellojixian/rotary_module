@@ -36,6 +36,11 @@ void camera_init(void) {
     camera_state.focus_trigger_last_state = true;   // 默认为高电平（上拉状态）
     camera_state.last_status_check = 0;
 
+    // 初始化触发状态
+    camera_state.trigger_state = TRIGGER_IDLE;
+    camera_state.trigger_start_time = 0;
+    camera_state.trigger_duration = 0;
+
     Serial.println(F("Camera module initialized"));
 }
 
@@ -129,6 +134,27 @@ void camera_update_status(void) {
 }
 
 /**
+ * 更新触发状态（非阻塞）
+ * 需要在主循环中调用
+ */
+void camera_update_triggers(void) {
+    if (camera_state.trigger_state == TRIGGER_IDLE) {
+        return;  // 没有活动的触发，直接返回
+    }
+
+    unsigned long current_time = millis();
+
+    // 检查触发时间是否已到
+    if (current_time - camera_state.trigger_start_time >= camera_state.trigger_duration) {
+        // 触发时间结束，释放触发信号
+        camera_release_triggers();
+        camera_state.trigger_state = TRIGGER_IDLE;
+
+        Serial.println(F("Camera trigger completed"));
+    }
+}
+
+/**
  * 获取当前相机状态
  */
 camera_status_t camera_get_status(void) {
@@ -175,7 +201,7 @@ void camera_display_status(void) {
 }
 
 /**
- * 触发相机对焦
+ * 触发相机对焦（非阻塞）
  * 将 CAMERA_FOCUS_TRIGGER_PIN 临时设置为输出低电平
  */
 void camera_trigger_focus(void) {
@@ -184,15 +210,25 @@ void camera_trigger_focus(void) {
         return;
     }
 
+    if (camera_state.trigger_state != TRIGGER_IDLE) {
+        Serial.println(F("Camera trigger already active"));
+        return;
+    }
+
     // 设置为输出模式并输出低电平（触发）
     DDRC |= (1 << CAMERA_FOCUS_TRIGGER_PIN);
     PORTC &= ~(1 << CAMERA_FOCUS_TRIGGER_PIN);
-    Serial.println(F("Camera focus triggered"));
-    delay(CAMERA_TRIGGER_HOLD_TIME);  // 保持对焦信号100ms
+
+    // 设置触发状态
+    camera_state.trigger_state = TRIGGER_FOCUS_ACTIVE;
+    camera_state.trigger_start_time = millis();
+    camera_state.trigger_duration = CAMERA_FOCUS_TRIGGER_TIME;
+
+    Serial.println(F("Camera focus triggered (non-blocking)"));
 }
 
 /**
- * 触发相机快门
+ * 触发相机快门（非阻塞）
  * 将 CAMERA_SHUTTER_TRIGGER_PIN 设置为输出低电平
  */
 void camera_trigger_shutter(void) {
@@ -201,11 +237,21 @@ void camera_trigger_shutter(void) {
         return;
     }
 
+    if (camera_state.trigger_state != TRIGGER_IDLE) {
+        Serial.println(F("Camera trigger already active"));
+        return;
+    }
+
     // 设置为输出模式并输出低电平（触发）
     DDRC |= (1 << CAMERA_SHUTTER_TRIGGER_PIN);
     PORTC &= ~(1 << CAMERA_SHUTTER_TRIGGER_PIN);
-    Serial.println(F("Camera shutter triggered"));
-    delay(CAMERA_TRIGGER_HOLD_TIME);  // 保持对焦信号100ms
+
+    // 设置触发状态
+    camera_state.trigger_state = TRIGGER_SHUTTER_ACTIVE;
+    camera_state.trigger_start_time = millis();
+    camera_state.trigger_duration = CAMERA_SHUTTER_TRIGGER_TIME;
+
+    Serial.println(F("Camera shutter triggered (non-blocking)"));
 }
 
 /**

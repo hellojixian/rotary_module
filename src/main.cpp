@@ -73,6 +73,9 @@ void loop() {
   // 更新相机状态
   camera_update_status();
 
+  // 更新相机触发状态（非阻塞）
+  camera_update_triggers();
+
   // 更新电压显示
   update_voltage_display();
 }
