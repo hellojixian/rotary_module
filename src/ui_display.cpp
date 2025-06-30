@@ -176,17 +176,17 @@ void ui_draw_config_menu_fullscreen(void) {
     uint8_t y = 4;
 
     // 显示标题
-    ui_center_text("Configuration", y);
+    // ui_center_text("Configuration", y);
 
     // 显示当前配置项，使用更大的字体和更多空间
     display.setTextSize(1);
-    display.setCursor(0, y + 12);
+    display.setCursor(0, y + 6);
     display.print(F("> "));
     display.print(ui_get_config_item_name(ui_state.current_config_item));
 
     // 显示配置项值，使用更大的字体
     display.setTextSize(1);
-    display.setCursor(0, y + 22);
+    display.setCursor(0, y + 18);
     display.print(F("  "));
     display.print(ui_get_config_item_value_string(ui_state.current_config_item));
 }
@@ -430,12 +430,12 @@ const char* ui_get_config_item_value_string(config_item_t item) {
         case CONFIG_ITEM_MOTOR_DIRECTION:
             return config_get_motor_direction_string();
         case CONFIG_ITEM_MOTOR_SPEED:
-            snprintf(value_str, sizeof(value_str), "%dms", config_get_motor_speed());
+            snprintf(value_str, sizeof(value_str), "%d ms", config_get_motor_speed());
             return value_str;
         case CONFIG_ITEM_ROTATION_ANGLE:
             return config_get_rotation_angle_string();
         case CONFIG_ITEM_PHOTO_INTERVAL:
-            snprintf(value_str, sizeof(value_str), "%d°", config_get_photo_interval());
+            snprintf(value_str, sizeof(value_str), "%d deg", config_get_photo_interval());
             return value_str;
         default:
             return "Unknown";

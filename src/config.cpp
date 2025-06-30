@@ -207,11 +207,11 @@ const char* config_get_motor_direction_string(void) {
  */
 const char* config_get_rotation_angle_string(void) {
     switch (g_config.rotation_angle) {
-        case ROTATION_ANGLE_90:  return "90°";
-        case ROTATION_ANGLE_180: return "180°";
-        case ROTATION_ANGLE_360: return "360°";
-        case ROTATION_ANGLE_540: return "540°";
-        case ROTATION_ANGLE_720: return "720°";
+        case ROTATION_ANGLE_90:  return "90 deg";
+        case ROTATION_ANGLE_180: return "180 deg";
+        case ROTATION_ANGLE_360: return "360 deg";
+        case ROTATION_ANGLE_540: return "540 deg";
+        case ROTATION_ANGLE_720: return "720 deg";
         default: return "Unknown";
     }
 }
