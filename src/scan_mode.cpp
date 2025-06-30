@@ -118,6 +118,8 @@ void scan_mode_handle_countdown(void) {
         if (remaining_seconds > 0) {
             buzzer_tone(1500, 200);
             scan_state.last_beep_time = current_time;
+        } else {
+            buzzer_tone(2000, 200);
         }
     }
 
