@@ -7,7 +7,7 @@
 void voltage_sensor_init();
 float read_battery_voltage();
 void display_battery_voltage();
-void update_voltage_display();
+void update_voltage_reading();
 
 // 电压监测相关变量声明
 extern unsigned long last_voltage_check;

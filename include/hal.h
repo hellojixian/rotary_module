@@ -17,8 +17,8 @@
 // configable key mapping
 #define KEY_CANCEL   KEY0_PIN
 #define KEY_PREV     KEY1_PIN
-#define KEY_NEXT PE4 KEY2_PIN
-#define KEY_OK PE5   KEY3_PIN
+#define KEY_NEXT     KEY2_PIN
+#define KEY_OK       KEY3_PIN
 
 #define VOLTAGE_SENSOR_PIN PC2
 

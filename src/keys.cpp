@@ -1,97 +1,113 @@
 #include <Arduino.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 #include "keys.h"
-#include "buzzer.h"
 
-// 外部显示对象声明
-extern Adafruit_SSD1306 display;
+// 按键状态数组
+static key_state_t key_states[KEY_NUM_COUNT];
 
-// 按键状态变量（默认低电平）
-bool key0_last_state = LOW;
-bool key1_last_state = LOW;
-bool key2_last_state = LOW;
-bool key3_last_state = LOW;
+/**
+ * 按键初始化函数
+ */
+void keys_init(void) {
+    // 设置 PE4 和 PE5 为输入（0）不开启上拉（0）
+    DDRE &= ~((1 << KEY2_PIN) | (1 << KEY3_PIN));     // 输入模式
+    // PORTE &= ~((1 << KEY2_PIN) | (1 << KEY3_PIN));    // 不开启上拉电阻
 
-// 按键初始化函数
-void keys_init() {
-  // 设置 PE4 和 PE5 为输入（0）不开启上拉（0）
-  DDRE &= ~((1 << KEY2_PIN) | (1 << KEY3_PIN));     // 输入模式
-  // PORTE &= ~((1 << KEY2_PIN) | (1 << KEY3_PIN));    // 不开启上拉电阻
+    // 设置 PD3 和 PD4 为输入（0）不开启上拉（0）
+    DDRD &= ~((1 << KEY0_PIN) | (1 << KEY1_PIN));     // 输入模式
+    // PORTD &= ~((1 << KEY0_PIN) | (1 << KEY1_PIN));    // 不开启上拉电阻
 
-  // 设置 PD3 和 PD4 为输入（0）不开启上拉（0）
-  DDRD &= ~((1 << KEY0_PIN) | (1 << KEY1_PIN));     // 输入模式
-  // PORTD &= ~((1 << KEY0_PIN) | (1 << KEY1_PIN));    // 不开启上拉电阻
+    // 初始化按键状态
+    for (int i = 0; i < KEY_NUM_COUNT; i++) {
+        key_states[i].current_state = false;
+        key_states[i].last_state = false;
+        key_states[i].press_start_time = 0;
+        key_states[i].long_press_triggered = false;
+    }
+
+
 }
 
-// 处理按键按下事件
-void handle_key_press(int key_num) {
-  // 清屏
-  display.clearDisplay();
+/**
+ * 更新按键状态（需要在主循环中调用）
+ */
+void keys_update(void) {
+    unsigned long current_time = millis();
 
-  // 设置文字属性
-  display.setTextColor(SSD1306_WHITE);
-  display.setTextSize(1);
-  display.setCursor(10, 8);
-
-  // 显示按键信息
-  display.print(F("KEY"));
-  display.print(key_num);
-  display.println(F(" PRESSED"));
-
-  // 更新显示
-  display.display();
-
-  // 调用对应的按键事件处理函数
-  switch(key_num) {
-    case 0:
-      key0_pressed();
-      break;
-    case 1:
-      key1_pressed();
-      break;
-    case 2:
-      key2_pressed();
-      break;
-    case 3:
-      key3_pressed();
-      break;
-  }
-
-  Serial.print(F("Key "));
-  Serial.print(key_num);
-  Serial.println(F(" pressed"));
+    // 更新所有按键状态
+    for (int i = 0; i < KEY_NUM_COUNT; i++) {
+        bool hardware_state = keys_read_hardware_state((key_num_t)i);
+        keys_update_key_state((key_num_t)i, hardware_state);
+    }
 }
 
-// 检查按键状态
-void check_keys() {
-  // 使用寄存器直接读取按键状态
-  bool key0_current = PIND & (1 << KEY0_PIN);
-  bool key1_current = PIND & (1 << KEY1_PIN);
-  bool key2_current = PINE & (1 << KEY2_PIN);
-  bool key3_current = PINE & (1 << KEY3_PIN);
+/**
+ * 获取按键事件
+ */
+key_event_t keys_get_event(key_num_t key) {
+    if (key >= KEY_NUM_COUNT) return KEY_EVENT_NONE;
 
-  // 检测按键0（上升沿触发）
-  if (key0_last_state == LOW && key0_current == HIGH) {
-    handle_key_press(0);
-  }
-  key0_last_state = key0_current;
+    key_state_t* state = &key_states[key];
+    unsigned long current_time = millis();
 
-  // 检测按键1（上升沿触发）
-  if (key1_last_state == LOW && key1_current == HIGH) {
-    handle_key_press(1);
-  }
-  key1_last_state = key1_current;
+    // 检查短按事件（上升沿触发）
+    if (state->last_state == false && state->current_state == true) {
+        // 按键刚按下，记录时间
+        state->press_start_time = current_time;
+        state->long_press_triggered = false;
+        return KEY_EVENT_NONE; // 等待确定是短按还是长按
+    }
 
-  // 检测按键2（上升沿触发）
-  if (key2_last_state == LOW && key2_current == HIGH) {
-    handle_key_press(2);
-  }
-  key2_last_state = key2_current;
+    // 检查长按事件
+    if (state->current_state == true && !state->long_press_triggered) {
+        if (current_time - state->press_start_time >= LONG_PRESS_TIME_MS) {
+            state->long_press_triggered = true;
+            return KEY_EVENT_LONG_PRESS;
+        }
+    }
 
-  // 检测按键3（上升沿触发）
-  if (key3_last_state == LOW && key3_current == HIGH) {
-    handle_key_press(3);
-  }
-  key3_last_state = key3_current;
+    // 检查短按事件（下降沿触发，且未触发长按）
+    if (state->last_state == true && state->current_state == false) {
+        if (!state->long_press_triggered) {
+            return KEY_EVENT_SHORT_PRESS;
+        }
+    }
+
+    return KEY_EVENT_NONE;
+}
+
+/**
+ * 检查按键是否被按下
+ */
+bool keys_is_pressed(key_num_t key) {
+    if (key >= KEY_NUM_COUNT) return false;
+    return key_states[key].current_state;
+}
+
+/**
+ * 更新单个按键状态
+ */
+void keys_update_key_state(key_num_t key, bool current_state) {
+    if (key >= KEY_NUM_COUNT) return;
+
+    key_state_t* state = &key_states[key];
+    state->last_state = state->current_state;
+    state->current_state = current_state;
+}
+
+/**
+ * 读取硬件按键状态
+ */
+bool keys_read_hardware_state(key_num_t key) {
+    switch (key) {
+        case KEY_NUM_CANCEL:  // KEY0
+            return (PIND & (1 << KEY0_PIN)) != 0;
+        case KEY_NUM_PREV:    // KEY1
+            return (PIND & (1 << KEY1_PIN)) != 0;
+        case KEY_NUM_NEXT:    // KEY2
+            return (PINE & (1 << KEY2_PIN)) != 0;
+        case KEY_NUM_OK:      // KEY3
+            return (PINE & (1 << KEY3_PIN)) != 0;
+        default:
+            return false;
+    }
 }
