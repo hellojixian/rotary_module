@@ -1,15 +1,21 @@
 #include <Arduino.h>
 #include "keys.h"
 #include "buzzer.h"
+#include "camera.h"
 
 // 按键3按下事件处理函数
 void key3_pressed() {
   // 播放按键3的专属提示音 (2100Hz)
   buzzer_tone(2100, 200);
 
-  // 在这里添加按键3的特定功能
-  Serial.println(F("Key 3 specific function executed"));
+  // 按键3功能：相机对焦控制
+  Serial.println(F("Key 3 pressed: Camera focus control"));
 
-  // 可以在这里添加更多按键3的专属功能
-  // 例如：重置系统、进入配置模式等
+  if (camera_get_status() == CAMERA_FULLY_CONNECTED) {
+    // 触发对焦
+    camera_trigger_shutter();
+    camera_release_triggers();
+  } else {
+    Serial.println(F("Camera not ready for focus"));
+  }
 }

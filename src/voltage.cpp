@@ -3,6 +3,7 @@
 #include <Adafruit_SSD1306.h>
 #include <Wire.h>
 #include "voltage.h"
+#include "camera.h"
 
 // 外部显示对象声明
 extern Adafruit_SSD1306 display;
@@ -60,6 +61,9 @@ void update_voltage_display() {
 
       // 显示电池电压
       display_battery_voltage();
+
+      // 显示相机状态
+      camera_display_status();
 
       display.display();
     }

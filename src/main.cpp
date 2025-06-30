@@ -8,6 +8,7 @@
 #include "voltage.h"
 #include "stepper_motor.h"
 #include "clock_verify.h"
+#include "camera.h"
 
 // 创建显示对象
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1); // -1 表示不使用复位引脚
@@ -51,6 +52,7 @@ void setup() {
   keys_init();
   voltage_sensor_init();
   stepper_motor_init();
+  camera_init();
 
   // 播放启动旋律
   play_startup_melody();
@@ -68,9 +70,9 @@ void loop() {
   // 更新步进电机状态
   stepper_motor_update();
 
+  // 更新相机状态
+  camera_update_status();
+
   // 更新电压显示
   update_voltage_display();
-
-  // 短暂延时，避免过于频繁的检测
-  delay(10);
 }
