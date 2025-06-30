@@ -14,6 +14,12 @@
 #define KEY2_PIN PE4
 #define KEY3_PIN PE5
 
+// configable key mapping
+#define KEY_CANCEL   KEY0_PIN
+#define KEY_PREV     KEY1_PIN
+#define KEY_NEXT PE4 KEY2_PIN
+#define KEY_OK PE5   KEY3_PIN
+
 #define VOLTAGE_SENSOR_PIN PC2
 
 #define STEP_MOTOR_INT1_PIN PE0
