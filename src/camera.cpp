@@ -178,6 +178,13 @@ const char* camera_get_status_string(void) {
 }
 
 /**
+ * 检查触发状态是否空闲
+ */
+bool camera_is_trigger_idle(void) {
+    return camera_state.trigger_state == TRIGGER_IDLE;
+}
+
+/**
  * 在显示屏上显示相机状态
  */
 void camera_display_status(void) {

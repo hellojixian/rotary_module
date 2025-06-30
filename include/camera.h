@@ -42,6 +42,7 @@ void camera_update_triggers(void);  // 新增：更新触发状态
 camera_status_t camera_get_status(void);
 const char* camera_get_status_string(void);
 void camera_display_status(void);
+bool camera_is_trigger_idle(void);  // 新增：检查触发状态是否空闲
 
 // 相机触发功能（低电平触发，默认高电平INPUT）
 void camera_trigger_focus(void);

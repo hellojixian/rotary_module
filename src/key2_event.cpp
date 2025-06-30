@@ -5,16 +5,28 @@
 
 // 按键2按下事件处理函数
 void key2_pressed() {
-  // 播放按键2的专属提示音 (2000Hz)
-  buzzer_tone(2000, 200);
-
   // 按键2功能：相机对焦控制
   Serial.println(F("Key 2 pressed: Camera focus control"));
 
-  if (camera_get_status() == CAMERA_FULLY_CONNECTED) {
-    // 触发对焦（非阻塞）
-    camera_trigger_focus();
-  } else {
+  // 检查相机连接状态
+  if (camera_get_status() != CAMERA_FULLY_CONNECTED) {
+    // 播放错误提示音
+    buzzer_tone(1400, 200);
     Serial.println(F("Camera not ready for focus"));
+    return;
   }
+
+  // 检查触发状态是否空闲
+  if (!camera_is_trigger_idle()) {
+    // 播放错误提示音
+    buzzer_tone(1400, 200);
+    Serial.println(F("Camera trigger already active"));
+    return;
+  }
+
+  // 触发对焦（非阻塞）
+  camera_trigger_focus();
+
+  // 播放成功提示音
+  buzzer_tone(2000, 200);
 }

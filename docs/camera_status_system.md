@@ -82,6 +82,7 @@ void camera_update_status(void);           // 更新相机状态（需在主循�
 ```cpp
 camera_status_t camera_get_status(void);   // 获取当前相机状态
 const char* camera_get_status_string(void); // 获取状态字符串
+bool camera_is_trigger_idle(void);         // 检查触发状态是否空闲
 ```
 
 ### 显示功能
@@ -100,21 +101,27 @@ void camera_release_triggers(void);        // 释放所有触发信号
 
 ### 按键2 (KEY2) - 相机对焦
 - **功能**: 触发相机对焦（非阻塞）
-- **条件**: 仅在相机完全连接状态下有效
-- **操作**:
+- **前置检查**:
+  1. 检查相机连接状态（必须为CAMERA_FULLY_CONNECTED）
+  2. 检查触发状态（必须为TRIGGER_IDLE）
+- **成功操作**:
   1. 设置 `CAMERA_FOCUS_TRIGGER_PIN` 为输出低电平
   2. 启动100ms计时器（非阻塞）
-  3. 系统继续响应其他操作
+  3. 播放2000Hz成功提示音
   4. 计时器到期后自动恢复为输入上拉模式
+- **失败处理**: 播放1000Hz错误提示音
 
 ### 按键3 (KEY3) - 相机对焦
 - **功能**: 触发相机对焦（非阻塞）
-- **条件**: 仅在相机完全连接状态下有效
-- **操作**:
+- **前置检查**:
+  1. 检查相机连接状态（必须为CAMERA_FULLY_CONNECTED）
+  2. 检查触发状态（必须为TRIGGER_IDLE）
+- **成功操作**:
   1. 设置 `CAMERA_FOCUS_TRIGGER_PIN` 为输出低电平
   2. 启动100ms计时器（非阻塞）
-  3. 系统继续响应其他操作
+  3. 播放2100Hz成功提示音
   4. 计时器到期后自动恢复为输入上拉模式
+- **失败处理**: 播放1000Hz错误提示音
 
 ## 状态检测逻辑
 
