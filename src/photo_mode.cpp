@@ -129,22 +129,32 @@ void photo_mode_handle_countdown(void) {
     unsigned long current_time = millis();
     unsigned long elapsed = current_time - photo_state.state_enter_time;
 
-    // 计算剩余秒数
-    uint8_t remaining_seconds = 3 - (elapsed / 1000);
+    // 计算当前显示的秒数（从3开始倒数）
+    uint8_t current_display_seconds;
+    if (elapsed < 1000) {
+        current_display_seconds = 3;
+    } else if (elapsed < 2000) {
+        current_display_seconds = 2;
+    } else if (elapsed < 3000) {
+        current_display_seconds = 1;
+    } else {
+        current_display_seconds = 0;
+    }
 
-    // 每秒beep一次
-    if (remaining_seconds != photo_state.countdown_seconds) {
-        photo_state.countdown_seconds = remaining_seconds;
-        if (remaining_seconds > 0) {
+    // 检查是否需要更新显示和蜂鸣
+    if (current_display_seconds != photo_state.countdown_seconds) {
+        photo_state.countdown_seconds = current_display_seconds;
+
+        // 同时触发蜂鸣（除了倒计时结束）
+        if (current_display_seconds > 0) {
             buzzer_tone(1500, 200);
             photo_state.last_beep_time = current_time;
-        } else {
-            buzzer_tone(2000, 200);
         }
     }
 
     // 倒计时结束，开始对焦
     if (elapsed >= COUNTDOWN_DURATION_MS) {
+        buzzer_tone(2000, 200);  // 结束音
         photo_mode_trigger_focus();
     }
 }

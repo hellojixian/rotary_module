@@ -187,8 +187,6 @@ void stepper_motor_update() {
     unsigned long current_time = micros();
     // 优先使用自定义速度，如果没有设置则使用预设速度
     unsigned long delay_time = (custom_speed_delay > 0) ? custom_speed_delay : speed_delays[motor_state.speed];
-    Serial.print(F("speed "));
-    Serial.println(delay_time);
     // 检查是否到了下一步的时间
     if (current_time - motor_state.last_step_time >= delay_time) {
         stepper_motor_step();

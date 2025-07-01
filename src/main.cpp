@@ -84,6 +84,4 @@ void loop() {
   // 更新电压读取（每2秒一次）
   update_voltage_reading();
 
-  // 短暂延时以避免过度占用CPU
-  delay(10);
 }

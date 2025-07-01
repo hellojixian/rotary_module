@@ -109,22 +109,32 @@ void scan_mode_handle_countdown(void) {
     unsigned long current_time = millis();
     unsigned long elapsed = current_time - scan_state.state_enter_time;
 
-    // 计算剩余秒数
-    uint8_t remaining_seconds = 3 - (elapsed / 1000);
+    // 计算当前显示的秒数（从3开始倒数）
+    uint8_t current_display_seconds;
+    if (elapsed < 1000) {
+        current_display_seconds = 3;
+    } else if (elapsed < 2000) {
+        current_display_seconds = 2;
+    } else if (elapsed < 3000) {
+        current_display_seconds = 1;
+    } else {
+        current_display_seconds = 0;
+    }
 
-    // 每秒beep一次
-    if (remaining_seconds != scan_state.countdown_seconds) {
-        scan_state.countdown_seconds = remaining_seconds;
-        if (remaining_seconds > 0) {
+    // 检查是否需要更新显示和蜂鸣
+    if (current_display_seconds != scan_state.countdown_seconds) {
+        scan_state.countdown_seconds = current_display_seconds;
+
+        // 同时触发蜂鸣（除了倒计时结束）
+        if (current_display_seconds > 0) {
             buzzer_tone(1500, 200);
             scan_state.last_beep_time = current_time;
-        } else {
-            buzzer_tone(2000, 200);
         }
     }
 
     // 倒计时结束，开始扫描
     if (elapsed >= COUNTDOWN_DURATION_MS) {
+        buzzer_tone(2000, 200);  // 结束音
         scan_mode_start_scanning();
     }
 }
@@ -182,18 +192,19 @@ void scan_mode_update_statistics(void) {
     if (scan_state.start_time > 0) {
         unsigned long elapsed_ms = millis() - scan_state.start_time;
 
-        // 获取电机速度配置（毫秒/步）
-        uint8_t motor_speed_ms = config_get_motor_speed();
+        // 根据电机速度估算步数
+        uint8_t motor_speed = config_get_motor_speed();
+        // motor_speed是每步的毫秒数，所以每秒步数 = 1000 / motor_speed
+        float steps_per_second = 1000.0 / motor_speed;
 
-        // 计算总步数：运行时间(ms) / 每步时间(ms) = 总步数
-        scan_state.total_steps = elapsed_ms / motor_speed_ms;
+        scan_state.total_steps = (uint32_t)(elapsed_ms * steps_per_second / 1000.0);
 
         // 根据当前步进模式计算圈数
         step_mode_t step_mode = stepper_motor_get_step_mode();
         uint16_t steps_per_revolution = (step_mode == STEP_MODE_FULL) ?
                                        STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
 
-        scan_state.total_turns = (float)scan_state.total_steps / (float)steps_per_revolution;
+        scan_state.total_turns = (float)scan_state.total_steps / steps_per_revolution;
     }
 }
 
