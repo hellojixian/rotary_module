@@ -1,4 +1,5 @@
 #include "scan_mode.h"
+#include "stepper_motor.h"
 
 // 3D扫描模式状态
 static scan_mode_state_t scan_state;
@@ -6,7 +7,6 @@ static scan_mode_state_t scan_state;
 // 时间常量
 #define COUNTDOWN_DURATION_MS       3000
 #define DISPLAY_UPDATE_INTERVAL_MS  500
-#define STEPS_PER_REVOLUTION        200  // 步进电机每圈步数
 
 /**
  * 初始化3D扫描模式
@@ -164,12 +164,8 @@ void scan_mode_start_scanning(void) {
     uint8_t motor_speed = config_get_motor_speed();
     uint8_t motor_direction = config_get_motor_direction();
 
-    // 根据配置设置电机速度
-    if (motor_speed <= 4) {
-        stepper_motor_set_speed(SPEED_HIGH);
-    } else {
-        stepper_motor_set_speed(SPEED_LOW);
-    }
+    // 直接使用用户配置的毫秒数
+    stepper_motor_set_custom_speed(motor_speed);
 
     // 设置电机方向
     stepper_motor_set_direction(motor_direction == MOTOR_DIRECTION_CW ? CLOCKWISE : COUNTER_CLOCKWISE);
@@ -182,18 +178,22 @@ void scan_mode_start_scanning(void) {
  * 更新统计数据
  */
 void scan_mode_update_statistics(void) {
-    // 这里需要从步进电机模块获取已移动的步数
-    // 由于当前步进电机模块可能没有提供这个接口，我们使用时间估算
-
+    // 根据时间和电机速度估算步数
     if (scan_state.start_time > 0) {
         unsigned long elapsed_ms = millis() - scan_state.start_time;
 
-        // 根据电机速度估算步数
-        uint8_t motor_speed = config_get_motor_speed();
-        float steps_per_second = 1000.0 / motor_speed;  // 每秒步数
+        // 获取电机速度配置（毫秒/步）
+        uint8_t motor_speed_ms = config_get_motor_speed();
 
-        scan_state.total_steps = (uint32_t)(elapsed_ms * steps_per_second / 1000.0);
-        scan_state.total_turns = (float)scan_state.total_steps / STEPS_PER_REVOLUTION;
+        // 计算总步数：运行时间(ms) / 每步时间(ms) = 总步数
+        scan_state.total_steps = elapsed_ms / motor_speed_ms;
+
+        // 根据当前步进模式计算圈数
+        step_mode_t step_mode = stepper_motor_get_step_mode();
+        uint16_t steps_per_revolution = (step_mode == STEP_MODE_FULL) ?
+                                       STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
+
+        scan_state.total_turns = (float)scan_state.total_steps / (float)steps_per_revolution;
     }
 }
 
@@ -209,6 +209,12 @@ void scan_mode_update_display(void) {
     }
     scan_state.last_display_update = current_time;
 
+    // 清屏并绘制状态栏
+    display.clearDisplay();
+    ui_draw_status_bar();
+    ui_draw_separator();
+
+    // 根据扫描状态绘制内容
     switch (scan_state.current_state) {
         case SCAN_STATE_COUNTDOWN:
             ui_draw_countdown(scan_state.countdown_seconds);
@@ -222,6 +228,9 @@ void scan_mode_update_display(void) {
         default:
             break;
     }
+
+    // 显示到屏幕
+    display.display();
 }
 
 /**

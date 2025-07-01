@@ -310,7 +310,7 @@ void photo_mode_start_rotation(void) {
 
     // 设置电机参数
     stepper_motor_set_direction(config_get_motor_direction() == MOTOR_DIRECTION_CW ? CLOCKWISE : COUNTER_CLOCKWISE);
-    stepper_motor_set_speed(config_get_motor_speed() <= 4 ? SPEED_HIGH : SPEED_LOW);
+    stepper_motor_set_custom_speed(config_get_motor_speed());
 
     // 开始旋转指定步数
     stepper_motor_rotate_steps(photo_state.steps_per_photo);
@@ -328,6 +328,12 @@ void photo_mode_finish_session(void) {
  * 更新显示
  */
 void photo_mode_update_display(void) {
+    // 清屏并绘制状态栏
+    display.clearDisplay();
+    ui_draw_status_bar();
+    ui_draw_separator();
+
+    // 根据拍照状态绘制内容
     switch (photo_state.current_state) {
         case PHOTO_STATE_COUNTDOWN:
             ui_draw_countdown(photo_state.countdown_seconds);
@@ -344,6 +350,9 @@ void photo_mode_update_display(void) {
         default:
             break;
     }
+
+    // 显示到屏幕
+    display.display();
 }
 
 /**

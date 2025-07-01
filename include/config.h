@@ -14,8 +14,8 @@
 #define MOTOR_DIRECTION_CW          0
 #define MOTOR_DIRECTION_CCW         1
 
-#define MOTOR_SPEED_MIN             2
-#define MOTOR_SPEED_MAX             8
+#define MOTOR_SPEED_MIN             1
+#define MOTOR_SPEED_MAX             15
 #define MOTOR_SPEED_DEFAULT         4
 
 #define ROTATION_ANGLE_90           90

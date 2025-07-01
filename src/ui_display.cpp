@@ -144,7 +144,7 @@ void ui_draw_config_menu(void) {
     // 显示配置项值，换行显示
     display.setCursor(0, y + 10);
     display.print(F("  "));
-    display.print(ui_get_config_item_value_string(ui_state.current_config_item));
+    ui_print_config_item_value(ui_state.current_config_item);
 }
 
 /**
@@ -162,7 +162,7 @@ void ui_draw_config_edit(void) {
 
     display.setCursor(0, y + 10);
     display.print(F("Value: "));
-    display.print(ui_get_config_item_value_string(ui_state.current_config_item));
+    ui_print_config_item_value(ui_state.current_config_item);
 }
 
 /**
@@ -188,7 +188,7 @@ void ui_draw_config_menu_fullscreen(void) {
     display.setTextSize(1);
     display.setCursor(0, y + 18);
     display.print(F("  "));
-    display.print(ui_get_config_item_value_string(ui_state.current_config_item));
+    ui_print_config_item_value(ui_state.current_config_item);
 }
 
 /**
@@ -213,7 +213,7 @@ void ui_draw_config_edit_fullscreen(void) {
     display.setTextSize(1);
     display.setCursor(0, y + 22);
     display.print(F("Value: "));
-    display.print(ui_get_config_item_value_string(ui_state.current_config_item));
+    ui_print_config_item_value(ui_state.current_config_item);
 }
 
 /**
@@ -257,15 +257,23 @@ void ui_draw_scan_running(float turns, unsigned long elapsed_seconds) {
     // 显示旋转圈数
     display.setCursor(0, y);
     display.print(F("Scan: "));
-    display.print(turns, 1);
+    display.print(turns, 2);  // 保留2位小数
     display.print(F(" turns"));
 
     // 显示运行时间
-    char time_str[16];
-    ui_format_time(elapsed_seconds, time_str);
     display.setCursor(0, y + 10);
     display.print(F("Time: "));
-    display.print(time_str);
+
+    // 直接计算并显示时间
+    unsigned long minutes = elapsed_seconds / 60;
+    unsigned long seconds = elapsed_seconds % 60;
+
+    if (minutes < 10) display.print(F("0"));
+    display.print(minutes);
+    display.print(F(":"));
+    if (seconds < 10) display.print(F("0"));
+    display.print(seconds);
+    Serial.println(seconds);
 }
 
 /**
@@ -275,19 +283,12 @@ void ui_draw_countdown(uint8_t seconds) {
     display.setTextSize(2);
     display.setTextColor(SSD1306_WHITE);
 
-    char countdown_str[4];
-    snprintf(countdown_str, sizeof(countdown_str), "%d", seconds);
-
-    // 计算居中位置
-    int16_t x1, y1;
-    uint16_t w, h;
-    display.getTextBounds(countdown_str, 0, 0, &x1, &y1, &w, &h);
-
-    uint8_t x = (SCREEN_WIDTH - w) / 2;
-    uint8_t y = UI_STATUS_BAR_HEIGHT + UI_SEPARATOR_HEIGHT + 8;
+    // 直接居中显示数字
+    uint8_t x = (SCREEN_WIDTH - 12) / 2;  // 大字体数字大约12像素宽
+    uint8_t y = UI_STATUS_BAR_HEIGHT + UI_SEPARATOR_HEIGHT + 10;
 
     display.setCursor(x, y);
-    display.print(countdown_str);
+    display.print(seconds);
 }
 
 /**
@@ -421,35 +422,31 @@ const char* ui_get_config_item_name(config_item_t item) {
 }
 
 /**
- * 获取配置项值字符串
+ * 显示配置项值（直接打印，不返回字符串）
  */
-const char* ui_get_config_item_value_string(config_item_t item) {
-    static char value_str[16];
-
+void ui_print_config_item_value(config_item_t item) {
     switch (item) {
         case CONFIG_ITEM_MOTOR_DIRECTION:
-            return config_get_motor_direction_string();
+            display.print(config_get_motor_direction_string());
+            break;
         case CONFIG_ITEM_MOTOR_SPEED:
-            snprintf(value_str, sizeof(value_str), "%d ms", config_get_motor_speed());
-            return value_str;
+            display.print(config_get_motor_speed());
+            display.print(F(" ms"));
+            break;
         case CONFIG_ITEM_ROTATION_ANGLE:
-            return config_get_rotation_angle_string();
+            display.print(config_get_rotation_angle_string());
+            break;
         case CONFIG_ITEM_PHOTO_INTERVAL:
-            snprintf(value_str, sizeof(value_str), "%d deg", config_get_photo_interval());
-            return value_str;
+            display.print(config_get_photo_interval());
+            display.print(F(" deg"));
+            break;
         default:
-            return "Unknown";
+            display.print(F("Unknown"));
+            break;
     }
 }
 
-/**
- * 格式化时间显示
- */
-void ui_format_time(unsigned long seconds, char* buffer) {
-    unsigned long minutes = seconds / 60;
-    seconds = seconds % 60;
-    snprintf(buffer, 16, "%02lu:%02lu", minutes, seconds);
-}
+
 
 /**
  * 居中显示文本

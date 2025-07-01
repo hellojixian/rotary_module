@@ -57,8 +57,12 @@ void menu_update(void) {
             break;
     }
 
-    // 更新显示
-    menu_update_display();
+    // 更新显示（只有在非运行状态时才调用菜单显示）
+    if (menu_state.current_state != MENU_STATE_PHOTO_RUNNING &&
+        menu_state.current_state != MENU_STATE_SCAN_RUNNING &&
+        menu_state.current_state != MENU_STATE_COUNTDOWN) {
+        menu_update_display();
+    }
 
     menu_state.last_update_time = current_time;
 }
@@ -125,7 +129,7 @@ void menu_handle_cancel_key(key_event_t event) {
         case MENU_STATE_STANDBY:
         case MENU_STATE_CAMERA_MODE:
         case MENU_STATE_SCAN_MODE:
-            if (event == KEY_EVENT_LONG_PRESS) {
+            if (event == KEY_EVENT_SHORT_PRESS) {
                 menu_enter_config();
                 buzzer_tone(1500, 200);
             }
@@ -197,9 +201,15 @@ void menu_handle_next_key(key_event_t event) {
  * 处理OK键
  */
 void menu_handle_ok_key(key_event_t event) {
-    if (event != KEY_EVENT_SHORT_PRESS) return;
+    // if (event != KEY_EVENT_SHORT_PRESS) return;
 
     switch (menu_state.current_state) {
+        // case MENU_STATE_STANDBY:
+        //     if (event == KEY_EVENT_LONG_PRESS) {
+        //         menu_enter_config();
+        //         buzzer_tone(1500, 200);
+        //     }
+        //     break;
         case MENU_STATE_CAMERA_MODE:
             menu_start_photo_mode();
             break;

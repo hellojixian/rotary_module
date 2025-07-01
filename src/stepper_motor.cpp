@@ -6,9 +6,12 @@ static stepper_motor_t motor_state;
 
 // 速度延时配置 (微秒) - 优化为平滑运行和降低发热
 static const unsigned long speed_delays[] = {
-    7000,   // SPEED_LOW: 15ms延时 (500步/秒，平滑稳定，低发热)
+    7000,   // SPEED_LOW: 7ms延时 (500步/秒，平滑稳定，低发热)
     2000    // SPEED_HIGH: 2ms延时 (1250步/秒，快速但平滑)
 };
+
+// 自定义速度延时 (微秒)
+static unsigned long custom_speed_delay = 4000;  // 默认4ms
 
 // 28BYJ-48 半步序列 (8步，平滑但扭矩较小)
 static const uint8_t step_sequence_half[STEP_SEQUENCE_LENGTH_HALF] = {
@@ -51,7 +54,7 @@ void stepper_motor_init() {
     motor_state.current_step = 0;
     motor_state.direction = CLOCKWISE;
     motor_state.speed = SPEED_LOW;
-    motor_state.step_mode = STEP_MODE_FULL;  // 默认使用半步模式（平滑，低发热）
+    motor_state.step_mode = STEP_MODE_FULL;
     motor_state.is_running = false;
     motor_state.last_step_time = 0;
     motor_state.target_steps = 0;
@@ -69,8 +72,19 @@ void stepper_motor_init() {
  */
 void stepper_motor_set_speed(motor_speed_t speed) {
     motor_state.speed = speed;
-    Serial.print(F("Motor speed set to: "));
-    Serial.println(speed == SPEED_LOW ? F("LOW") : F("HIGH"));
+}
+
+/**
+ * 设置自定义电机速度
+ * @param delay_ms 步进间隔时间（毫秒）
+ */
+void stepper_motor_set_custom_speed(uint8_t delay_ms) {
+    // 限制范围在1-15ms之间
+    if (delay_ms < 1) delay_ms = 1;
+    if (delay_ms > 15) delay_ms = 15;
+
+    // 转换为微秒
+    custom_speed_delay = (unsigned long)delay_ms * 1000;
 }
 
 /**
@@ -134,7 +148,6 @@ void stepper_motor_start() {
     motor_state.is_running = true;
     motor_state.remaining_steps = -1; // -1表示连续转动
     motor_state.last_step_time = micros();
-
     Serial.println(F("Motor started (continuous rotation)"));
 }
 
@@ -159,14 +172,23 @@ bool stepper_motor_is_running() {
 }
 
 /**
+ * 获取当前步进模式
+ */
+step_mode_t stepper_motor_get_step_mode() {
+    return motor_state.step_mode;
+}
+
+/**
  * 更新电机状态 (需要在主循环中调用)
  */
 void stepper_motor_update() {
     if (!motor_state.is_running) return;
 
     unsigned long current_time = micros();
-    unsigned long delay_time = speed_delays[motor_state.speed];
-
+    // 优先使用自定义速度，如果没有设置则使用预设速度
+    unsigned long delay_time = (custom_speed_delay > 0) ? custom_speed_delay : speed_delays[motor_state.speed];
+    Serial.print(F("speed "));
+    Serial.println(delay_time);
     // 检查是否到了下一步的时间
     if (current_time - motor_state.last_step_time >= delay_time) {
         stepper_motor_step();

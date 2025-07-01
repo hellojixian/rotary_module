@@ -42,6 +42,7 @@ typedef struct {
 // 函数声明
 void stepper_motor_init();
 void stepper_motor_set_speed(motor_speed_t speed);
+void stepper_motor_set_custom_speed(uint8_t delay_ms);
 void stepper_motor_set_direction(motor_direction_t direction);
 void stepper_motor_set_step_mode(step_mode_t mode);
 void stepper_motor_rotate_angle(float angle);
@@ -50,6 +51,7 @@ void stepper_motor_start();
 void stepper_motor_stop();
 void stepper_motor_update();
 bool stepper_motor_is_running();
+step_mode_t stepper_motor_get_step_mode();
 
 // 扭矩优化函数
 void stepper_motor_enable_high_torque();

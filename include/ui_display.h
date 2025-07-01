@@ -70,12 +70,12 @@ void ui_config_exit_edit(void);
 void ui_config_increase_value(void);
 void ui_config_decrease_value(void);
 const char* ui_get_config_item_name(config_item_t item);
-const char* ui_get_config_item_value_string(config_item_t item);
+void ui_print_config_item_value(config_item_t item);
 
 // 辅助函数
 void ui_clear_main_area(void);
 void ui_draw_separator(void);
 void ui_center_text(const char* text, uint8_t y);
-void ui_format_time(unsigned long seconds, char* buffer);
+
 
 #endif // UI_DISPLAY_H
