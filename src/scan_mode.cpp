@@ -180,6 +180,9 @@ void scan_mode_start_scanning(void) {
     // 设置电机方向
     stepper_motor_set_direction(motor_direction == MOTOR_DIRECTION_CW ? CLOCKWISE : COUNTER_CLOCKWISE);
 
+    // 重置步数计数器
+    stepper_motor_reset_step_count();
+
     // 启动连续旋转
     stepper_motor_start();
 }
@@ -188,24 +191,15 @@ void scan_mode_start_scanning(void) {
  * 更新统计数据
  */
 void scan_mode_update_statistics(void) {
-    // 根据时间和电机速度估算步数
-    if (scan_state.start_time > 0) {
-        unsigned long elapsed_ms = millis() - scan_state.start_time;
+    // 直接从步进电机模块读取精确的步数
+    scan_state.total_steps = stepper_motor_get_step_count();
 
-        // 根据电机速度估算步数
-        uint8_t motor_speed = config_get_motor_speed();
-        // motor_speed是每步的毫秒数，所以每秒步数 = 1000 / motor_speed
-        float steps_per_second = 1000.0 / motor_speed;
+    // 根据当前步进模式计算圈数
+    step_mode_t step_mode = stepper_motor_get_step_mode();
+    uint16_t steps_per_revolution = (step_mode == STEP_MODE_FULL) ?
+                                   STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
 
-        scan_state.total_steps = (uint32_t)(elapsed_ms * steps_per_second / 1000.0);
-
-        // 根据当前步进模式计算圈数
-        step_mode_t step_mode = stepper_motor_get_step_mode();
-        uint16_t steps_per_revolution = (step_mode == STEP_MODE_FULL) ?
-                                       STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
-
-        scan_state.total_turns = (float)scan_state.total_steps / steps_per_revolution;
-    }
+    scan_state.total_turns = (float)scan_state.total_steps / steps_per_revolution;
 }
 
 /**

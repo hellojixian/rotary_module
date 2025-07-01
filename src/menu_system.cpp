@@ -211,10 +211,12 @@ void menu_handle_ok_key(key_event_t event) {
         //     }
         //     break;
         case MENU_STATE_CAMERA_MODE:
+            buzzer_tone(1500, 200);
             menu_start_photo_mode();
             break;
 
         case MENU_STATE_SCAN_MODE:
+            buzzer_tone(1500, 200);
             menu_start_scan_mode();
             break;
 

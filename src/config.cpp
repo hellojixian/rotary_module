@@ -175,7 +175,16 @@ bool config_is_valid_motor_direction(uint8_t direction) {
  * 验证电机速度
  */
 bool config_is_valid_motor_speed(uint8_t speed) {
-    return (speed >= MOTOR_SPEED_MIN && speed <= MOTOR_SPEED_MAX);
+    // 检查是否为预设的有效值
+    const uint8_t valid_speeds[] = {2, 4, 6, 8, 10, 15, 30, 60, 100};
+    const uint8_t valid_count = sizeof(valid_speeds) / sizeof(valid_speeds[0]);
+
+    for (uint8_t i = 0; i < valid_count; i++) {
+        if (speed == valid_speeds[i]) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**

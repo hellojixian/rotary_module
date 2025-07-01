@@ -4,8 +4,8 @@
 #include "hal.h"
 
 // 步进电机参数定义
-#define STEPS_PER_REVOLUTION_HALF 2048  // 28BYJ-48 每转步数 (半步模式)
-#define STEPS_PER_REVOLUTION_FULL 1024  // 28BYJ-48 每转步数 (全步模式)
+#define STEPS_PER_REVOLUTION_HALF 4096  // 28BYJ-48 每转步数 (半步模式)
+#define STEPS_PER_REVOLUTION_FULL 2048  // 28BYJ-48 每转步数 (全步模式)
 #define STEP_SEQUENCE_LENGTH_HALF 8     // 半步序列长度
 #define STEP_SEQUENCE_LENGTH_FULL 4     // 全步序列长度
 
@@ -52,6 +52,8 @@ void stepper_motor_stop();
 void stepper_motor_update();
 bool stepper_motor_is_running();
 step_mode_t stepper_motor_get_step_mode();
+uint32_t stepper_motor_get_step_count();
+void stepper_motor_reset_step_count();
 
 // 扭矩优化函数
 void stepper_motor_enable_high_torque();

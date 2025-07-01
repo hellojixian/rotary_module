@@ -6,6 +6,10 @@ extern float battery_voltage;
 // UI状态变量
 static ui_state_t ui_state;
 
+// 电机速度预设值数组
+static const uint8_t motor_speed_values[] = {2, 4, 6, 8, 10, 15, 30, 60, 100};
+static const uint8_t motor_speed_count = sizeof(motor_speed_values) / sizeof(motor_speed_values[0]);
+
 /**
  * 初始化UI显示系统
  */
@@ -341,6 +345,24 @@ void ui_config_exit_edit(void) {
 }
 
 /**
+ * 查找电机速度在预设数组中的索引
+ */
+static uint8_t find_motor_speed_index(uint8_t speed) {
+    for (uint8_t i = 0; i < motor_speed_count; i++) {
+        if (motor_speed_values[i] == speed) {
+            return i;
+        }
+    }
+    // 如果没找到，返回最接近的值的索引
+    for (uint8_t i = 0; i < motor_speed_count - 1; i++) {
+        if (speed < motor_speed_values[i + 1]) {
+            return i;
+        }
+    }
+    return motor_speed_count - 1;  // 返回最后一个
+}
+
+/**
  * 增加配置值
  */
 void ui_config_increase_value(void) {
@@ -349,8 +371,12 @@ void ui_config_increase_value(void) {
             config_set_motor_direction(MOTOR_DIRECTION_CCW);
             break;
         case CONFIG_ITEM_MOTOR_SPEED:
-            if (config_get_motor_speed() < MOTOR_SPEED_MAX) {
-                config_set_motor_speed(config_get_motor_speed() + 1);
+            {
+                uint8_t current_speed = config_get_motor_speed();
+                uint8_t current_index = find_motor_speed_index(current_speed);
+                if (current_index < motor_speed_count - 1) {
+                    config_set_motor_speed(motor_speed_values[current_index + 1]);
+                }
             }
             break;
         case CONFIG_ITEM_ROTATION_ANGLE:
@@ -383,8 +409,12 @@ void ui_config_decrease_value(void) {
             config_set_motor_direction(MOTOR_DIRECTION_CW);
             break;
         case CONFIG_ITEM_MOTOR_SPEED:
-            if (config_get_motor_speed() > MOTOR_SPEED_MIN) {
-                config_set_motor_speed(config_get_motor_speed() - 1);
+            {
+                uint8_t current_speed = config_get_motor_speed();
+                uint8_t current_index = find_motor_speed_index(current_speed);
+                if (current_index > 0) {
+                    config_set_motor_speed(motor_speed_values[current_index - 1]);
+                }
             }
             break;
         case CONFIG_ITEM_ROTATION_ANGLE:

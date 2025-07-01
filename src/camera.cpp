@@ -2,6 +2,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "camera.h"
+#include "buzzer.h"
 
 // 外部显示对象声明
 extern Adafruit_SSD1306 display;
@@ -86,10 +87,12 @@ bool camera_check_camera_detection(void) {
     // 高电平 = 相机连接，低电平 = 相机未连接
     if (current_state && !camera_state.camera_detected) {
         camera_state.camera_detected = true;
+        buzzer_tone(2000, 200);
         Serial.println(F("Camera detected"));
     }
     else if (!current_state && camera_state.camera_detected) {
         camera_state.camera_detected = false;
+        buzzer_tone(1500, 200);
         Serial.println(F("Camera connection lost"));
     }
 

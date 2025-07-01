@@ -13,6 +13,9 @@ static const unsigned long speed_delays[] = {
 // 自定义速度延时 (微秒)
 static unsigned long custom_speed_delay = 4000;  // 默认4ms
 
+// 步数计数器
+static volatile uint32_t step_counter = 0;
+
 // 28BYJ-48 半步序列 (8步，平滑但扭矩较小)
 static const uint8_t step_sequence_half[STEP_SEQUENCE_LENGTH_HALF] = {
     0b0001,  // 0001
@@ -79,9 +82,9 @@ void stepper_motor_set_speed(motor_speed_t speed) {
  * @param delay_ms 步进间隔时间（毫秒）
  */
 void stepper_motor_set_custom_speed(uint8_t delay_ms) {
-    // 限制范围在1-15ms之间
-    if (delay_ms < 1) delay_ms = 1;
-    if (delay_ms > 15) delay_ms = 15;
+    // 限制范围在2-100ms之间
+    if (delay_ms < 2) delay_ms = 2;
+    if (delay_ms > 100) delay_ms = 100;
 
     // 转换为微秒
     custom_speed_delay = (unsigned long)delay_ms * 1000;
@@ -179,6 +182,20 @@ step_mode_t stepper_motor_get_step_mode() {
 }
 
 /**
+ * 获取步数计数器
+ */
+uint32_t stepper_motor_get_step_count() {
+    return step_counter;
+}
+
+/**
+ * 重置步数计数器
+ */
+void stepper_motor_reset_step_count() {
+    step_counter = 0;
+}
+
+/**
  * 更新电机状态 (需要在主循环中调用)
  */
 void stepper_motor_update() {
@@ -229,6 +246,9 @@ void stepper_motor_step() {
     } else {
         stepper_motor_set_pins(step_sequence_half[motor_state.current_step]);
     }
+
+    // 增加步数计数器
+    step_counter++;
 }
 
 /**
