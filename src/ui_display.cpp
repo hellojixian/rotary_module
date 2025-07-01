@@ -368,32 +368,41 @@ static uint8_t find_motor_speed_index(uint8_t speed) {
 void ui_config_increase_value(void) {
     switch (ui_state.current_config_item) {
         case CONFIG_ITEM_MOTOR_DIRECTION:
-            config_set_motor_direction(MOTOR_DIRECTION_CCW);
+            // 循环切换：CW -> CCW -> CW
+            if (config_get_motor_direction() == MOTOR_DIRECTION_CW) {
+                config_set_motor_direction(MOTOR_DIRECTION_CCW);
+            } else {
+                config_set_motor_direction(MOTOR_DIRECTION_CW);
+            }
             break;
         case CONFIG_ITEM_MOTOR_SPEED:
             {
                 uint8_t current_speed = config_get_motor_speed();
                 uint8_t current_index = find_motor_speed_index(current_speed);
-                if (current_index < motor_speed_count - 1) {
-                    config_set_motor_speed(motor_speed_values[current_index + 1]);
-                }
+                // 循环到下一个速度值，到最后一个时回到第一个
+                uint8_t next_index = (current_index + 1) % motor_speed_count;
+                config_set_motor_speed(motor_speed_values[next_index]);
             }
             break;
         case CONFIG_ITEM_ROTATION_ANGLE:
             {
                 uint16_t current = config_get_rotation_angle();
+                // 循环切换：90 -> 180 -> 360 -> 540 -> 720 -> 90
                 if (current == ROTATION_ANGLE_90) config_set_rotation_angle(ROTATION_ANGLE_180);
                 else if (current == ROTATION_ANGLE_180) config_set_rotation_angle(ROTATION_ANGLE_360);
                 else if (current == ROTATION_ANGLE_360) config_set_rotation_angle(ROTATION_ANGLE_540);
                 else if (current == ROTATION_ANGLE_540) config_set_rotation_angle(ROTATION_ANGLE_720);
+                else if (current == ROTATION_ANGLE_720) config_set_rotation_angle(ROTATION_ANGLE_90);
             }
             break;
         case CONFIG_ITEM_PHOTO_INTERVAL:
             {
                 uint8_t current = config_get_photo_interval();
+                // 循环切换：5 -> 10 -> 15 -> 30 -> 5
                 if (current == PHOTO_INTERVAL_5) config_set_photo_interval(PHOTO_INTERVAL_10);
                 else if (current == PHOTO_INTERVAL_10) config_set_photo_interval(PHOTO_INTERVAL_15);
                 else if (current == PHOTO_INTERVAL_15) config_set_photo_interval(PHOTO_INTERVAL_30);
+                else if (current == PHOTO_INTERVAL_30) config_set_photo_interval(PHOTO_INTERVAL_5);
             }
             break;
     }
@@ -406,32 +415,41 @@ void ui_config_increase_value(void) {
 void ui_config_decrease_value(void) {
     switch (ui_state.current_config_item) {
         case CONFIG_ITEM_MOTOR_DIRECTION:
-            config_set_motor_direction(MOTOR_DIRECTION_CW);
+            // 循环切换：CCW -> CW -> CCW
+            if (config_get_motor_direction() == MOTOR_DIRECTION_CCW) {
+                config_set_motor_direction(MOTOR_DIRECTION_CW);
+            } else {
+                config_set_motor_direction(MOTOR_DIRECTION_CCW);
+            }
             break;
         case CONFIG_ITEM_MOTOR_SPEED:
             {
                 uint8_t current_speed = config_get_motor_speed();
                 uint8_t current_index = find_motor_speed_index(current_speed);
-                if (current_index > 0) {
-                    config_set_motor_speed(motor_speed_values[current_index - 1]);
-                }
+                // 循环到上一个速度值，到第一个时回到最后一个
+                uint8_t prev_index = (current_index + motor_speed_count - 1) % motor_speed_count;
+                config_set_motor_speed(motor_speed_values[prev_index]);
             }
             break;
         case CONFIG_ITEM_ROTATION_ANGLE:
             {
                 uint16_t current = config_get_rotation_angle();
+                // 循环切换：720 -> 540 -> 360 -> 180 -> 90 -> 720
                 if (current == ROTATION_ANGLE_720) config_set_rotation_angle(ROTATION_ANGLE_540);
                 else if (current == ROTATION_ANGLE_540) config_set_rotation_angle(ROTATION_ANGLE_360);
                 else if (current == ROTATION_ANGLE_360) config_set_rotation_angle(ROTATION_ANGLE_180);
                 else if (current == ROTATION_ANGLE_180) config_set_rotation_angle(ROTATION_ANGLE_90);
+                else if (current == ROTATION_ANGLE_90) config_set_rotation_angle(ROTATION_ANGLE_720);
             }
             break;
         case CONFIG_ITEM_PHOTO_INTERVAL:
             {
                 uint8_t current = config_get_photo_interval();
+                // 循环切换：30 -> 15 -> 10 -> 5 -> 30
                 if (current == PHOTO_INTERVAL_30) config_set_photo_interval(PHOTO_INTERVAL_15);
                 else if (current == PHOTO_INTERVAL_15) config_set_photo_interval(PHOTO_INTERVAL_10);
                 else if (current == PHOTO_INTERVAL_10) config_set_photo_interval(PHOTO_INTERVAL_5);
+                else if (current == PHOTO_INTERVAL_5) config_set_photo_interval(PHOTO_INTERVAL_30);
             }
             break;
     }
