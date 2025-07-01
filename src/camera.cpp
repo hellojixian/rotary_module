@@ -37,6 +37,10 @@ void camera_init(void) {
     camera_state.focus_trigger_last_state = true;   // 默认为高电平（上拉状态）
     camera_state.last_status_check = 0;
 
+    // 初始化相机连接丢失检测
+    camera_state.camera_lost_start_time = 0;
+    camera_state.camera_lost_timing = false;
+
     // 初始化触发状态
     camera_state.trigger_state = TRIGGER_IDLE;
     camera_state.trigger_start_time = 0;
@@ -72,28 +76,56 @@ bool camera_check_cable_connection(void) {
 /**
  * 检查是否检测到相机
  * 当连接线插入后，CAMERA_FOCUS_TRIGGER_PIN 从低电平变为高电平时，说明检测到相机
+ * 相机连接丢失需要低电平持续超过 CAMERA_SHUTTER_TRIGGER_TIME + 500ms 才判断为丢失
  */
 bool camera_check_camera_detection(void) {
     // 只有在连接线已插入的情况下才检测相机
     if (!camera_state.cable_connected) {
         camera_state.camera_detected = false;
+        camera_state.camera_lost_timing = false;
+        camera_state.camera_lost_start_time = 0;
         return false;
     }
 
-    // 读取焦点触发引脚状态
+    // 读取焦点触发引脚状态（修正：应该读取 CAMERA_FOCUS_TRIGGER_PIN）
     bool current_state = (PINC & (1 << CAMERA_FOCUS_TRIGGER_PIN)) != 0;
+    unsigned long current_time = millis();
 
-    // 直接根据当前状态判断相机是否连接
-    // 高电平 = 相机连接，低电平 = 相机未连接
+    // 检测相机连接（从低电平变为高电平）
     if (current_state && !camera_state.camera_detected) {
         camera_state.camera_detected = true;
+        camera_state.camera_lost_timing = false;
+        camera_state.camera_lost_start_time = 0;
         buzzer_tone(2000, 200);
         Serial.println(F("Camera detected"));
     }
+    // 检测相机可能断开连接（从高电平变为低电平）
     else if (!current_state && camera_state.camera_detected) {
-        camera_state.camera_detected = false;
-        buzzer_tone(1500, 200);
-        Serial.println(F("Camera connection lost"));
+        // 如果还没有开始计时，开始计时
+        if (!camera_state.camera_lost_timing) {
+            camera_state.camera_lost_timing = true;
+            camera_state.camera_lost_start_time = current_time;
+            Serial.println(F("Camera signal lost, starting disconnect timer"));
+        }
+        // 如果已经在计时，检查是否超过阈值时间
+        else {
+            unsigned long lost_duration = current_time - camera_state.camera_lost_start_time;
+            unsigned long disconnect_threshold = CAMERA_SHUTTER_TRIGGER_TIME + 500; // 快门触发时间 + 0.5秒
+
+            if (lost_duration >= disconnect_threshold) {
+                camera_state.camera_detected = false;
+                camera_state.camera_lost_timing = false;
+                camera_state.camera_lost_start_time = 0;
+                buzzer_tone(1500, 200);
+                Serial.println(F("Camera connection lost (confirmed after timeout)"));
+            }
+        }
+    }
+    // 如果信号恢复为高电平，取消计时
+    else if (current_state && camera_state.camera_lost_timing) {
+        camera_state.camera_lost_timing = false;
+        camera_state.camera_lost_start_time = 0;
+        Serial.println(F("Camera signal recovered, disconnect timer cancelled"));
     }
 
     camera_state.focus_trigger_last_state = current_state;

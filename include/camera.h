@@ -29,6 +29,10 @@ typedef struct {
     bool focus_trigger_last_state;
     unsigned long last_status_check;
 
+    // 相机连接丢失检测
+    unsigned long camera_lost_start_time;  // 开始检测到低电平的时间
+    bool camera_lost_timing;               // 是否正在计时检测连接丢失
+
     // 非阻塞触发管理
     trigger_state_t trigger_state;
     unsigned long trigger_start_time;
