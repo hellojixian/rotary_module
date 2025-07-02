@@ -241,7 +241,7 @@ void ui_draw_photo_running(uint8_t current_photo, uint8_t total_photos,
 
     // 显示照片进度和角度参数在同一行
     display.setCursor(0, y+2);
-    display.print(F("P:"));
+    display.print(F(" P:"));
     if (current_photo < 10) display.print(F("0"));  // Zero padding for 2 digits
     display.print(current_photo);
     display.print(F("/"));
@@ -251,7 +251,7 @@ void ui_draw_photo_running(uint8_t current_photo, uint8_t total_photos,
     uint16_t current_angle = stepper_motor_get_current_angle();
 
     // 在同一行显示角度信息
-    display.print(F("  R:"));
+    display.print(F("   R:"));
     if (current_angle < 100) display.print(F("0"));      // Zero padding for 3 digits
     if (current_angle < 10) display.print(F("0"));
     display.print(current_angle);
