@@ -51,6 +51,9 @@ typedef struct {
     bool focus_triggered;
     bool shutter_triggered;
 
+    // 显示更新相关
+    unsigned long last_display_update;
+
 } photo_mode_state_t;
 
 // 函数声明

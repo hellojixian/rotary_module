@@ -239,7 +239,7 @@ void ui_draw_photo_running(uint8_t current_photo, uint8_t total_photos,
     uint8_t y = UI_STATUS_BAR_HEIGHT + UI_SEPARATOR_HEIGHT + 2;
 
     // 显示照片进度和角度参数在同一行
-    display.setCursor(0, y);
+    display.setCursor(0, y+2);
     display.print(F("P:"));
     display.print(current_photo);
     display.print(F("/"));
@@ -249,17 +249,17 @@ void ui_draw_photo_running(uint8_t current_photo, uint8_t total_photos,
     uint16_t current_angle = current_photo * angle_per_photo;
 
     // 在同一行显示角度信息
-    display.print(F(" r:"));
+    display.print(F("  R:"));
     display.print(current_angle);
     display.print(F("/"));
     display.print(total_angle);
     display.print(F("d"));
 
-    // 绘制全宽进度条
+    // 绘制全宽进度条 - 基于旋转角度进度
     uint8_t progress_bar_width = SCREEN_WIDTH - 2;  // 留2像素边距
-    uint8_t progress_bar_height = 6;  // 恢复原来的高度
-    ui_draw_progress_bar(1, y + 10, progress_bar_width, progress_bar_height,
-                        current_photo, total_photos);
+    uint8_t progress_bar_height = 4;  // 恢复原来的高度
+    ui_draw_progress_bar_16(1, y + 14, progress_bar_width, progress_bar_height,
+                           current_angle, total_angle);
 }
 
 /**
@@ -321,6 +321,23 @@ void ui_draw_progress_bar(uint8_t x, uint8_t y, uint8_t width, uint8_t height,
         uint8_t fill_width = (width - 2) * current / total;
         if (fill_width > 0) {
             display.fillRect(x + 1, y + 1, fill_width, height - 2, SSD1306_WHITE);
+        }
+    }
+}
+
+/**
+ * 绘制进度条（支持16位数值）
+ */
+void ui_draw_progress_bar_16(uint8_t x, uint8_t y, uint8_t width, uint8_t height,
+                            uint16_t current, uint16_t total) {
+    // 绘制边框
+    display.drawRect(x, y, width, height, SSD1306_WHITE);
+
+    // 计算填充宽度
+    if (total > 0) {
+        uint16_t fill_width = (uint16_t)(width - 2) * current / total;
+        if (fill_width > 0 && fill_width <= (width - 2)) {
+            display.fillRect(x + 1, y + 1, (uint8_t)fill_width, height - 2, SSD1306_WHITE);
         }
     }
 }

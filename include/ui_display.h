@@ -62,6 +62,8 @@ void ui_draw_countdown(uint8_t seconds);
 // 进度条绘制
 void ui_draw_progress_bar(uint8_t x, uint8_t y, uint8_t width, uint8_t height,
                          uint8_t current, uint8_t total);
+void ui_draw_progress_bar_16(uint8_t x, uint8_t y, uint8_t width, uint8_t height,
+                            uint16_t current, uint16_t total);
 
 // 配置菜单相关
 void ui_config_next_item(void);

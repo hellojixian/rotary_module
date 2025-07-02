@@ -196,6 +196,16 @@ void stepper_motor_reset_step_count() {
 }
 
 /**
+ * 获取当前旋转的已完成步数
+ */
+uint32_t stepper_motor_get_current_rotation_steps() {
+    if (motor_state.target_steps > 0) {
+        return motor_state.target_steps - motor_state.remaining_steps;
+    }
+    return 0;
+}
+
+/**
  * 更新电机状态 (需要在主循环中调用)
  */
 void stepper_motor_update() {

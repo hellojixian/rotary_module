@@ -87,8 +87,8 @@ bool camera_check_camera_detection(void) {
         return false;
     }
 
-    // 读取焦点触发引脚状态（修正：应该读取 CAMERA_FOCUS_TRIGGER_PIN）
-    bool current_state = (PINC & (1 << CAMERA_FOCUS_TRIGGER_PIN)) != 0;
+    // 读取焦点触发引脚状态（修正：应该读取 CAMERA_SHUTTER_TRIGGER_PIN
+    bool current_state = (PINC & (1 << CAMERA_SHUTTER_TRIGGER_PIN)) != 0;
     unsigned long current_time = millis();
 
     // 检测相机连接（从低电平变为高电平）

@@ -8,6 +8,7 @@ static photo_mode_state_t photo_state;
 #define FOCUS_DURATION_MS           500
 #define SHUTTER_DURATION_MS         200
 #define ROTATION_SETTLE_TIME_MS     500
+#define PHOTO_DISPLAY_UPDATE_INTERVAL_MS  50  // 拍照模式高频显示更新间隔
 
 /**
  * 初始化拍照模式
@@ -29,6 +30,7 @@ void photo_mode_init(void) {
     photo_state.shutter_start_time = 0;
     photo_state.focus_triggered = false;
     photo_state.shutter_triggered = false;
+    photo_state.last_display_update = 0;
 
 
 }
@@ -177,8 +179,17 @@ void photo_mode_handle_focus(void) {
     unsigned long current_time = millis();
     unsigned long elapsed = current_time - photo_state.state_enter_time;
 
+    // 添加调试信息显示对焦进度
+    static unsigned long last_debug_time = 0;
+    if (current_time - last_debug_time >= 500) {  // 每500ms输出一次
+        last_debug_time = current_time;
+    }
+
     // 对焦完成，进入第一张照片前停留状态
-    if (elapsed >= FOCUS_DURATION_MS) {
+    if (elapsed >= CAMERA_FOCUS_TRIGGER_TIME) {
+        // 释放对焦触发
+        camera_release_triggers();
+
         photo_state.current_state = PHOTO_STATE_PRE_FIRST_SHOT;
         photo_state.state_enter_time = current_time;
         // current_photo保持为0，表示还没有完成任何照片
@@ -197,7 +208,6 @@ void photo_mode_handle_pre_first_shot(void) {
         photo_state.current_state = PHOTO_STATE_FIRST_SHOT;
         photo_state.state_enter_time = current_time;
         photo_mode_trigger_shutter();
-        Serial.println(F("Starting first shot at 0 degrees"));
     }
 }
 
@@ -244,6 +254,14 @@ void photo_mode_handle_post_first_shot(void) {
  * 处理旋转状态
  */
 void photo_mode_handle_rotating(void) {
+    // 实时更新当前角度显示（基于电机已完成的步数）
+    uint32_t completed_steps = stepper_motor_get_current_rotation_steps();
+    uint16_t current_rotation_angle = photo_mode_steps_to_angle(completed_steps);
+
+    // 更新显示用的当前角度（基础角度 + 当前旋转进度）
+    uint16_t base_angle = photo_state.current_photo * photo_state.angle_per_photo;
+    photo_state.current_angle = base_angle + current_rotation_angle;
+
     // 检查电机是否完成旋转
     if (!stepper_motor_is_running()) {
         unsigned long current_time = millis();
@@ -251,27 +269,17 @@ void photo_mode_handle_rotating(void) {
 
         // 等待电机稳定
         if (elapsed >= ROTATION_SETTLE_TIME_MS) {
-            // 更新当前角度
-            photo_state.current_angle += photo_state.angle_per_photo;
-
-            Serial.print(F("Rotation complete. Current angle: "));
-            Serial.print(photo_state.current_angle);
-            Serial.print(F("°, Completed photos: "));
-            Serial.print(photo_state.current_photo);
-            Serial.print(F("/"));
-            Serial.println(photo_state.total_photos);
+            // 确保角度更新到精确位置
+            photo_state.current_angle = (photo_state.current_photo + 1) * photo_state.angle_per_photo;
 
             // 检查是否已经拍摄完所有照片
             // 最后一次旋转是为了复位，不需要拍摄
             if (photo_state.current_photo >= photo_state.total_photos) {
-                Serial.println(F("All photos completed, finishing session"));
                 photo_mode_finish_session();
             } else {
                 // 进入拍摄前停留状态
                 photo_state.current_state = PHOTO_STATE_PRE_SHOOTING;
                 photo_state.state_enter_time = current_time;
-                Serial.print(F("Preparing to shoot photo "));
-                Serial.println(photo_state.current_photo + 1);
             }
         }
     }
@@ -321,14 +329,9 @@ void photo_mode_handle_post_shooting(void) {
         // 当前照片已完成
         photo_state.current_photo++;
 
-        Serial.print(F("Photo "));
-        Serial.print(photo_state.current_photo);
-        Serial.println(F(" completed"));
-
         // 检查是否已经拍摄完所有照片
         if (photo_state.current_photo >= photo_state.total_photos) {
             // 已经拍摄完所有照片，最后一次旋转是为了复位
-            Serial.println(F("All photos done, rotating back to start"));
             photo_mode_start_rotation();
         } else {
             // 继续旋转到下一个位置进行拍摄
@@ -392,14 +395,6 @@ void photo_mode_calculate_parameters(void) {
     // 计算每张照片需要的步数
     photo_state.steps_per_photo = photo_mode_angle_to_steps(photo_interval);
     photo_state.total_steps_moved = 0;
-
-    Serial.print(F("Photo mode parameters: "));
-    Serial.print(photo_state.total_photos);
-    Serial.print(F(" photos, "));
-    Serial.print(photo_interval);
-    Serial.print(F("° interval, "));
-    Serial.print(rotation_angle);
-    Serial.println(F("° total"));
 }
 
 /**
@@ -454,6 +449,14 @@ void photo_mode_finish_session(void) {
  * 更新显示
  */
 void photo_mode_update_display(void) {
+    unsigned long current_time = millis();
+
+    // 限制显示更新频率为50ms（20fps），提供流畅的进度条更新
+    if (current_time - photo_state.last_display_update < PHOTO_DISPLAY_UPDATE_INTERVAL_MS) {
+        return;
+    }
+    photo_state.last_display_update = current_time;
+
     // 清屏并绘制状态栏
     display.clearDisplay();
     ui_draw_status_bar();
