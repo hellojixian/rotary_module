@@ -45,8 +45,6 @@ void camera_init(void) {
     camera_state.trigger_state = TRIGGER_IDLE;
     camera_state.trigger_start_time = 0;
     camera_state.trigger_duration = 0;
-
-    Serial.println(F("Camera module initialized"));
 }
 
 /**
@@ -60,13 +58,11 @@ bool camera_check_cable_connection(void) {
     // 如果从高电平变为低电平，说明连接线已插入
     if (camera_state.trigger_sensor_last_state && !current_state) {
         camera_state.cable_connected = true;
-        Serial.println(F("Camera cable connected"));
     }
     // 如果从低电平变为高电平，说明连接线已拔出
     else if (!camera_state.trigger_sensor_last_state && current_state) {
         camera_state.cable_connected = false;
         camera_state.camera_detected = false;  // 连接线拔出时，相机检测也失效
-        Serial.println(F("Camera cable disconnected"));
     }
 
     camera_state.trigger_sensor_last_state = current_state;
@@ -97,7 +93,6 @@ bool camera_check_camera_detection(void) {
         camera_state.camera_lost_timing = false;
         camera_state.camera_lost_start_time = 0;
         buzzer_tone(2000, 200);
-        Serial.println(F("Camera detected"));
     }
     // 检测相机可能断开连接（从高电平变为低电平）
     else if (!current_state && camera_state.camera_detected) {
@@ -105,7 +100,6 @@ bool camera_check_camera_detection(void) {
         if (!camera_state.camera_lost_timing) {
             camera_state.camera_lost_timing = true;
             camera_state.camera_lost_start_time = current_time;
-            Serial.println(F("Camera signal lost, starting disconnect timer"));
         }
         // 如果已经在计时，检查是否超过阈值时间
         else {
@@ -117,7 +111,6 @@ bool camera_check_camera_detection(void) {
                 camera_state.camera_lost_timing = false;
                 camera_state.camera_lost_start_time = 0;
                 buzzer_tone(1500, 200);
-                Serial.println(F("Camera connection lost (confirmed after timeout)"));
             }
         }
     }
@@ -125,7 +118,6 @@ bool camera_check_camera_detection(void) {
     else if (current_state && camera_state.camera_lost_timing) {
         camera_state.camera_lost_timing = false;
         camera_state.camera_lost_start_time = 0;
-        Serial.println(F("Camera signal recovered, disconnect timer cancelled"));
     }
 
     camera_state.focus_trigger_last_state = current_state;
@@ -159,11 +151,9 @@ void camera_update_status(void) {
             new_status = CAMERA_FULLY_CONNECTED;
         }
 
-        // 如果状态发生变化，输出日志
+        // 如果状态发生变化，更新状态
         if (new_status != camera_state.status) {
             camera_state.status = new_status;
-            Serial.print(F("Camera status changed to: "));
-            Serial.println(camera_get_status_string());
         }
     }
 }
@@ -184,8 +174,6 @@ void camera_update_triggers(void) {
         // 触发时间结束，释放触发信号
         camera_release_triggers();
         camera_state.trigger_state = TRIGGER_IDLE;
-
-        Serial.println(F("Camera trigger completed"));
     }
 }
 
@@ -248,12 +236,10 @@ void camera_display_status(void) {
  */
 void camera_trigger_focus(void) {
     if (camera_state.status != CAMERA_FULLY_CONNECTED) {
-        Serial.println(F("Camera not ready for focus trigger"));
         return;
     }
 
     if (camera_state.trigger_state != TRIGGER_IDLE) {
-        Serial.println(F("Camera trigger already active"));
         return;
     }
 
@@ -265,8 +251,6 @@ void camera_trigger_focus(void) {
     camera_state.trigger_state = TRIGGER_FOCUS_ACTIVE;
     camera_state.trigger_start_time = millis();
     camera_state.trigger_duration = CAMERA_FOCUS_TRIGGER_TIME;
-
-    Serial.println(F("Camera focus triggered (non-blocking)"));
 }
 
 /**
@@ -275,12 +259,10 @@ void camera_trigger_focus(void) {
  */
 void camera_trigger_shutter(void) {
     if (camera_state.status != CAMERA_FULLY_CONNECTED) {
-        Serial.println(F("Camera not ready for shutter trigger"));
         return;
     }
 
     if (camera_state.trigger_state != TRIGGER_IDLE) {
-        Serial.println(F("Camera trigger already active"));
         return;
     }
 
