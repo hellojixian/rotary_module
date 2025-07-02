@@ -4,8 +4,10 @@
 #include "hal.h"
 
 // 步进电机参数定义
-#define STEPS_PER_REVOLUTION_HALF 4076  // 28BYJ-48 每转步数 (半步模式)
-#define STEPS_PER_REVOLUTION_FULL 2038  // 28BYJ-48 每转步数 (全步模式)
+// #define STEPS_PER_REVOLUTION_HALF 4076  // 28BYJ-48 每转步数 (半步模式)
+// #define STEPS_PER_REVOLUTION_FULL 2038  // 28BYJ-48 每转步数 (全步模式)
+#define STEPS_PER_REVOLUTION_HALF 4096  // 28BYJ-48 每转步数 (半步模式)
+#define STEPS_PER_REVOLUTION_FULL 2048  // 28BYJ-48 每转步数 (全步模式)
 #define STEP_SEQUENCE_LENGTH_HALF 8     // 半步序列长度
 #define STEP_SEQUENCE_LENGTH_FULL 4     // 全步序列长度
 

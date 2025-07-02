@@ -35,4 +35,8 @@
 #define CAMERA_FOCUS_TRIGGER_TIME   3000
 #define CAMERA_SHUTTER_TRIGGER_TIME 2000
 
+// 拍照模式时间配置
+#define PHOTO_PRE_SHUTTER_SETTLE_TIME   1000  // 快门前停留时间（毫秒）
+#define PHOTO_POST_SHUTTER_SETTLE_TIME  1000  // 快门后停留时间（毫秒）
+
 #endif // HAL_H

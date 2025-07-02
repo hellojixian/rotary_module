@@ -231,21 +231,34 @@ void ui_clear_main_area(void) {
 /**
  * 绘制拍照运行界面
  */
-void ui_draw_photo_running(uint8_t current_photo, uint8_t total_photos) {
+void ui_draw_photo_running(uint8_t current_photo, uint8_t total_photos,
+                          uint16_t total_angle, uint8_t angle_per_photo) {
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
 
-    uint8_t y = UI_STATUS_BAR_HEIGHT + UI_SEPARATOR_HEIGHT + 4;
+    uint8_t y = UI_STATUS_BAR_HEIGHT + UI_SEPARATOR_HEIGHT + 2;
 
-    // 显示进度文本
+    // 显示照片进度和角度参数在同一行
     display.setCursor(0, y);
-    display.print(F("Photo: "));
+    display.print(F("P:"));
     display.print(current_photo);
     display.print(F("/"));
     display.print(total_photos);
 
-    // 绘制进度条
-    ui_draw_progress_bar(0, y + 10, UI_PROGRESS_BAR_WIDTH, UI_PROGRESS_BAR_HEIGHT,
+    // 计算当前角度（已完成的旋转角度）
+    uint16_t current_angle = current_photo * angle_per_photo;
+
+    // 在同一行显示角度信息
+    display.print(F(" r:"));
+    display.print(current_angle);
+    display.print(F("/"));
+    display.print(total_angle);
+    display.print(F("d"));
+
+    // 绘制全宽进度条
+    uint8_t progress_bar_width = SCREEN_WIDTH - 2;  // 留2像素边距
+    uint8_t progress_bar_height = 6;  // 恢复原来的高度
+    ui_draw_progress_bar(1, y + 10, progress_bar_width, progress_bar_height,
                         current_photo, total_photos);
 }
 

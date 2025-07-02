@@ -54,7 +54,8 @@ void ui_draw_config_menu(void);
 void ui_draw_config_edit(void);
 void ui_draw_config_menu_fullscreen(void);
 void ui_draw_config_edit_fullscreen(void);
-void ui_draw_photo_running(uint8_t current_photo, uint8_t total_photos);
+void ui_draw_photo_running(uint8_t current_photo, uint8_t total_photos,
+                          uint16_t total_angle, uint8_t angle_per_photo);
 void ui_draw_scan_running(float turns, unsigned long elapsed_seconds);
 void ui_draw_countdown(uint8_t seconds);
 

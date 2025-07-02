@@ -83,14 +83,26 @@ void photo_mode_update(void) {
         case PHOTO_STATE_FOCUS:
             photo_mode_handle_focus();
             break;
+        case PHOTO_STATE_PRE_FIRST_SHOT:
+            photo_mode_handle_pre_first_shot();
+            break;
         case PHOTO_STATE_FIRST_SHOT:
             photo_mode_handle_first_shot();
+            break;
+        case PHOTO_STATE_POST_FIRST_SHOT:
+            photo_mode_handle_post_first_shot();
             break;
         case PHOTO_STATE_ROTATING:
             photo_mode_handle_rotating();
             break;
+        case PHOTO_STATE_PRE_SHOOTING:
+            photo_mode_handle_pre_shooting();
+            break;
         case PHOTO_STATE_SHOOTING:
             photo_mode_handle_shooting();
+            break;
+        case PHOTO_STATE_POST_SHOOTING:
+            photo_mode_handle_post_shooting();
             break;
         case PHOTO_STATE_COMPLETE:
             photo_mode_handle_complete();
@@ -111,7 +123,6 @@ void photo_mode_update(void) {
  */
 bool photo_mode_is_running(void) {
     return (photo_state.current_state != PHOTO_STATE_IDLE &&
-            photo_state.current_state != PHOTO_STATE_COMPLETE &&
             photo_state.current_state != PHOTO_STATE_STOPPED);
 }
 
@@ -166,12 +177,27 @@ void photo_mode_handle_focus(void) {
     unsigned long current_time = millis();
     unsigned long elapsed = current_time - photo_state.state_enter_time;
 
-    // 对焦完成，拍摄第一张照片
+    // 对焦完成，进入第一张照片前停留状态
     if (elapsed >= FOCUS_DURATION_MS) {
+        photo_state.current_state = PHOTO_STATE_PRE_FIRST_SHOT;
+        photo_state.state_enter_time = current_time;
+        // current_photo保持为0，表示还没有完成任何照片
+    }
+}
+
+/**
+ * 处理第一张照片前停留状态
+ */
+void photo_mode_handle_pre_first_shot(void) {
+    unsigned long current_time = millis();
+    unsigned long elapsed = current_time - photo_state.state_enter_time;
+
+    // 停留时间结束，开始拍摄第一张照片
+    if (elapsed >= PHOTO_PRE_SHUTTER_SETTLE_TIME) {
         photo_state.current_state = PHOTO_STATE_FIRST_SHOT;
         photo_state.state_enter_time = current_time;
-        photo_state.current_photo = 1;
         photo_mode_trigger_shutter();
+        Serial.println(F("Starting first shot at 0 degrees"));
     }
 }
 
@@ -185,6 +211,24 @@ void photo_mode_handle_first_shot(void) {
     // 快门完成
     if (elapsed >= SHUTTER_DURATION_MS) {
         camera_release_triggers();
+
+        // 进入第一张照片后停留状态
+        photo_state.current_state = PHOTO_STATE_POST_FIRST_SHOT;
+        photo_state.state_enter_time = current_time;
+    }
+}
+
+/**
+ * 处理第一张照片后停留状态
+ */
+void photo_mode_handle_post_first_shot(void) {
+    unsigned long current_time = millis();
+    unsigned long elapsed = current_time - photo_state.state_enter_time;
+
+    // 停留时间结束
+    if (elapsed >= PHOTO_POST_SHUTTER_SETTLE_TIME) {
+        // 第一张照片已完成
+        photo_state.current_photo = 1;
 
         // 如果只需要拍一张照片，直接完成
         if (photo_state.total_photos == 1) {
@@ -209,18 +253,42 @@ void photo_mode_handle_rotating(void) {
         if (elapsed >= ROTATION_SETTLE_TIME_MS) {
             // 更新当前角度
             photo_state.current_angle += photo_state.angle_per_photo;
-            photo_state.current_photo++;
 
-            // 检查是否完成所有拍摄
-            if (photo_state.current_photo > photo_state.total_photos) {
+            Serial.print(F("Rotation complete. Current angle: "));
+            Serial.print(photo_state.current_angle);
+            Serial.print(F("°, Completed photos: "));
+            Serial.print(photo_state.current_photo);
+            Serial.print(F("/"));
+            Serial.println(photo_state.total_photos);
+
+            // 检查是否已经拍摄完所有照片
+            // 最后一次旋转是为了复位，不需要拍摄
+            if (photo_state.current_photo >= photo_state.total_photos) {
+                Serial.println(F("All photos completed, finishing session"));
                 photo_mode_finish_session();
             } else {
-                // 拍摄下一张照片
-                photo_state.current_state = PHOTO_STATE_SHOOTING;
+                // 进入拍摄前停留状态
+                photo_state.current_state = PHOTO_STATE_PRE_SHOOTING;
                 photo_state.state_enter_time = current_time;
-                photo_mode_trigger_shutter();
+                Serial.print(F("Preparing to shoot photo "));
+                Serial.println(photo_state.current_photo + 1);
             }
         }
+    }
+}
+
+/**
+ * 处理拍摄前停留状态
+ */
+void photo_mode_handle_pre_shooting(void) {
+    unsigned long current_time = millis();
+    unsigned long elapsed = current_time - photo_state.state_enter_time;
+
+    // 停留时间结束，开始拍摄
+    if (elapsed >= PHOTO_PRE_SHUTTER_SETTLE_TIME) {
+        photo_state.current_state = PHOTO_STATE_SHOOTING;
+        photo_state.state_enter_time = current_time;
+        photo_mode_trigger_shutter();
     }
 }
 
@@ -235,11 +303,35 @@ void photo_mode_handle_shooting(void) {
     if (elapsed >= SHUTTER_DURATION_MS) {
         camera_release_triggers();
 
-        // 检查是否完成所有拍摄
+        // 进入拍摄后停留状态
+        photo_state.current_state = PHOTO_STATE_POST_SHOOTING;
+        photo_state.state_enter_time = current_time;
+    }
+}
+
+/**
+ * 处理拍摄后停留状态
+ */
+void photo_mode_handle_post_shooting(void) {
+    unsigned long current_time = millis();
+    unsigned long elapsed = current_time - photo_state.state_enter_time;
+
+    // 停留时间结束
+    if (elapsed >= PHOTO_POST_SHUTTER_SETTLE_TIME) {
+        // 当前照片已完成
+        photo_state.current_photo++;
+
+        Serial.print(F("Photo "));
+        Serial.print(photo_state.current_photo);
+        Serial.println(F(" completed"));
+
+        // 检查是否已经拍摄完所有照片
         if (photo_state.current_photo >= photo_state.total_photos) {
-            photo_mode_finish_session();
+            // 已经拍摄完所有照片，最后一次旋转是为了复位
+            Serial.println(F("All photos done, rotating back to start"));
+            photo_mode_start_rotation();
         } else {
-            // 继续旋转到下一个位置
+            // 继续旋转到下一个位置进行拍摄
             photo_mode_start_rotation();
         }
     }
@@ -249,21 +341,35 @@ void photo_mode_handle_shooting(void) {
  * 处理完成状态
  */
 void photo_mode_handle_complete(void) {
-    // 播放完成提示音
-    static bool completion_sound_played = false;
-    if (!completion_sound_played) {
-        buzzer_tone(2000, 200);
-        delay(100);
-        buzzer_tone(2500, 200);
-        completion_sound_played = true;
+    unsigned long current_time = millis();
+    unsigned long elapsed = current_time - photo_state.state_enter_time;
 
-        // 2秒后返回菜单
-        photo_state.state_enter_time = millis();
+    // 使用状态变量来跟踪音效播放，避免静态变量问题
+    static unsigned long first_beep_time = 0;
+    static unsigned long second_beep_time = 0;
+    static bool beeps_initialized = false;
+
+    // 初始化音效时间（只在第一次进入完成状态时）
+    if (!beeps_initialized) {
+        first_beep_time = current_time;
+        second_beep_time = current_time + 150;  // 300ms后播放第二个音
+        beeps_initialized = true;
+        buzzer_tone(1500, 100);  // 播放第一个音
+    }
+
+    // 播放第二个音效
+    if (current_time >= second_beep_time && second_beep_time > 0) {
+        buzzer_tone(2000, 150);
+        second_beep_time = 0;  // 标记已播放，避免重复
     }
 
     // 2秒后自动返回空闲状态
-    if (millis() - photo_state.state_enter_time >= 2000) {
+    if (elapsed >= 2000) {
         photo_state.current_state = PHOTO_STATE_IDLE;
+        // 重置音效状态，为下次使用做准备
+        beeps_initialized = false;
+        first_beep_time = 0;
+        second_beep_time = 0;
     }
 }
 
@@ -274,8 +380,10 @@ void photo_mode_calculate_parameters(void) {
     uint16_t rotation_angle = config_get_rotation_angle();
     uint8_t photo_interval = config_get_photo_interval();
 
-    // 计算总照片数
-    photo_state.total_photos = (rotation_angle / photo_interval) + 1;
+    // 计算总照片数：第一张在0度拍摄，然后每隔photo_interval拍摄一张
+    // 例如：360度，间隔30度 -> 0°, 30°, 60°, 90°, 120°, 150°, 180°, 210°, 240°, 270°, 300°, 330° = 12张照片
+    // 不在360度位置拍摄，因为那接近起始位置
+    photo_state.total_photos = rotation_angle / photo_interval;
     photo_state.angle_per_photo = photo_interval;
     photo_state.target_angle = rotation_angle;
     photo_state.current_angle = 0;
@@ -284,6 +392,14 @@ void photo_mode_calculate_parameters(void) {
     // 计算每张照片需要的步数
     photo_state.steps_per_photo = photo_mode_angle_to_steps(photo_interval);
     photo_state.total_steps_moved = 0;
+
+    Serial.print(F("Photo mode parameters: "));
+    Serial.print(photo_state.total_photos);
+    Serial.print(F(" photos, "));
+    Serial.print(photo_interval);
+    Serial.print(F("° interval, "));
+    Serial.print(rotation_angle);
+    Serial.println(F("° total"));
 }
 
 /**
@@ -349,10 +465,16 @@ void photo_mode_update_display(void) {
             ui_draw_countdown(photo_state.countdown_seconds);
             break;
         case PHOTO_STATE_FOCUS:
+        case PHOTO_STATE_PRE_FIRST_SHOT:
         case PHOTO_STATE_FIRST_SHOT:
+        case PHOTO_STATE_POST_FIRST_SHOT:
         case PHOTO_STATE_ROTATING:
+        case PHOTO_STATE_PRE_SHOOTING:
         case PHOTO_STATE_SHOOTING:
-            ui_draw_photo_running(photo_state.current_photo, photo_state.total_photos);
+        case PHOTO_STATE_POST_SHOOTING:
+            // 直接使用 current_photo，它现在始终表示已完成的照片数
+            ui_draw_photo_running(photo_state.current_photo, photo_state.total_photos,
+                                 photo_state.target_angle, photo_state.angle_per_photo);
             break;
         case PHOTO_STATE_COMPLETE:
             ui_center_text("Photo Complete!", 16);
@@ -369,14 +491,24 @@ void photo_mode_update_display(void) {
  * 角度转换为步数
  */
 uint32_t photo_mode_angle_to_steps(uint16_t angle) {
-    // 假设步进电机每圈200步，减速比1:1
-    // 360度 = 200步
-    return (uint32_t)angle * 200 / 360;
+    // 根据当前步进模式获取正确的每圈步数
+    step_mode_t step_mode = stepper_motor_get_step_mode();
+    uint16_t steps_per_revolution = (step_mode == STEP_MODE_FULL) ?
+                                   STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
+
+    // 计算角度对应的步数
+    return (uint32_t)angle * steps_per_revolution / 360;
 }
 
 /**
  * 步数转换为角度
  */
 uint16_t photo_mode_steps_to_angle(uint32_t steps) {
-    return (uint16_t)(steps * 360 / 200);
+    // 根据当前步进模式获取正确的每圈步数
+    step_mode_t step_mode = stepper_motor_get_step_mode();
+    uint16_t steps_per_revolution = (step_mode == STEP_MODE_FULL) ?
+                                   STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
+
+    // 计算步数对应的角度
+    return (uint16_t)(steps * 360 / steps_per_revolution);
 }
