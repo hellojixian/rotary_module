@@ -195,9 +195,10 @@ uint16_t stepper_motor_get_current_angle() {
     uint16_t steps_per_revolution = (motor_state.step_mode == STEP_MODE_FULL) ?
                                    STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
 
-    // 计算当前累计角度
+    // 计算当前累计角度，使用四舍五入
     uint32_t total_angle_steps = step_counter;
-    uint16_t current_angle = (uint16_t)(total_angle_steps * 360 / steps_per_revolution);
+    uint32_t angle_calculation = total_angle_steps * 360;
+    uint16_t current_angle = (uint16_t)((angle_calculation + steps_per_revolution / 2) / steps_per_revolution);
 
     return current_angle;
 }
