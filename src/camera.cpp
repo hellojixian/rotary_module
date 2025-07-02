@@ -274,8 +274,6 @@ void camera_trigger_shutter(void) {
     camera_state.trigger_state = TRIGGER_SHUTTER_ACTIVE;
     camera_state.trigger_start_time = millis();
     camera_state.trigger_duration = CAMERA_SHUTTER_TRIGGER_TIME;
-
-    Serial.println(F("Camera shutter triggered (non-blocking)"));
 }
 
 /**
@@ -290,6 +288,4 @@ void camera_release_triggers(void) {
     // 将 CAMERA_SHUTTER_TRIGGER_PIN 恢复为输入模式，开启上拉电阻
     DDRC &= ~(1 << CAMERA_SHUTTER_TRIGGER_PIN);
     PORTC |= (1 << CAMERA_SHUTTER_TRIGGER_PIN);
-
-    Serial.println(F("Camera triggers released"));
 }

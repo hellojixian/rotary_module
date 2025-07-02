@@ -47,6 +47,9 @@ void photo_mode_start(void) {
     // 计算拍照参数
     photo_mode_calculate_parameters();
 
+    // 重置步数计数器，确保角度从0开始
+    stepper_motor_reset_step_count();
+
     // 开始倒计时
     photo_mode_start_countdown();
 }
@@ -254,14 +257,6 @@ void photo_mode_handle_post_first_shot(void) {
  * 处理旋转状态
  */
 void photo_mode_handle_rotating(void) {
-    // 实时更新当前角度显示（基于电机已完成的步数）
-    uint32_t completed_steps = stepper_motor_get_current_rotation_steps();
-    uint16_t current_rotation_angle = photo_mode_steps_to_angle(completed_steps);
-
-    // 更新显示用的当前角度（基础角度 + 当前旋转进度）
-    uint16_t base_angle = photo_state.current_photo * photo_state.angle_per_photo;
-    photo_state.current_angle = base_angle + current_rotation_angle;
-
     // 检查电机是否完成旋转
     if (!stepper_motor_is_running()) {
         unsigned long current_time = millis();
@@ -269,8 +264,6 @@ void photo_mode_handle_rotating(void) {
 
         // 等待电机稳定
         if (elapsed >= ROTATION_SETTLE_TIME_MS) {
-            // 确保角度更新到精确位置
-            photo_state.current_angle = (photo_state.current_photo + 1) * photo_state.angle_per_photo;
 
             // 检查是否已经拍摄完所有照片
             // 最后一次旋转是为了复位，不需要拍摄

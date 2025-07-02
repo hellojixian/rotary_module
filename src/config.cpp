@@ -33,8 +33,6 @@ void config_save_to_eeprom(void) {
 
     // 保存到EEPROM
     EEPROM.put(EEPROM_CONFIG_START_ADDR, g_config);
-
-    Serial.println(F("Configuration saved to EEPROM"));
 }
 
 /**
@@ -48,8 +46,6 @@ void config_reset_to_default(void) {
     g_config.rotation_angle = ROTATION_ANGLE_DEFAULT;
     g_config.photo_interval = PHOTO_INTERVAL_DEFAULT;
     g_config.checksum = 0; // 将在保存时计算
-
-    Serial.println(F("Configuration reset to defaults"));
 }
 
 /**

@@ -1,4 +1,5 @@
 #include "ui_display.h"
+#include "stepper_motor.h"
 
 // 外部变量声明
 extern float battery_voltage;
@@ -245,8 +246,8 @@ void ui_draw_photo_running(uint8_t current_photo, uint8_t total_photos,
     display.print(F("/"));
     display.print(total_photos);
 
-    // 计算当前角度（已完成的旋转角度）
-    uint16_t current_angle = current_photo * angle_per_photo;
+    // 直接从stepper motor读取当前累计角度
+    uint16_t current_angle = stepper_motor_get_current_angle();
 
     // 在同一行显示角度信息
     display.print(F("  R:"));
@@ -290,7 +291,6 @@ void ui_draw_scan_running(float turns, unsigned long elapsed_seconds) {
     display.print(F(":"));
     if (seconds < 10) display.print(F("0"));
     display.print(seconds);
-    Serial.println(seconds);
 }
 
 /**

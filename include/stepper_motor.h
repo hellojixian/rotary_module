@@ -57,6 +57,7 @@ step_mode_t stepper_motor_get_step_mode();
 uint32_t stepper_motor_get_step_count();
 void stepper_motor_reset_step_count();
 uint32_t stepper_motor_get_current_rotation_steps();
+uint16_t stepper_motor_get_current_angle();
 
 // 扭矩优化函数
 void stepper_motor_enable_high_torque();

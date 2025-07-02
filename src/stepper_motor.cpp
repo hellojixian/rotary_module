@@ -188,6 +188,21 @@ uint32_t stepper_motor_get_current_rotation_steps() {
 }
 
 /**
+ * 获取当前累计角度（基于总步数计数器）
+ */
+uint16_t stepper_motor_get_current_angle() {
+    // 根据当前步进模式获取正确的每圈步数
+    uint16_t steps_per_revolution = (motor_state.step_mode == STEP_MODE_FULL) ?
+                                   STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
+
+    // 计算当前累计角度
+    uint32_t total_angle_steps = step_counter;
+    uint16_t current_angle = (uint16_t)(total_angle_steps * 360 / steps_per_revolution);
+
+    return current_angle;
+}
+
+/**
  * 更新电机状态 (需要在主循环中调用)
  */
 void stepper_motor_update() {
