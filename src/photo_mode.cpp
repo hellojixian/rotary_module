@@ -418,7 +418,7 @@ void photo_mode_trigger_focus(void) {
  * 触发快门
  */
 void photo_mode_trigger_shutter(void) {
-    buzzer_tone(1500, 50);
+    buzzer_tone(2000, 80);
     camera_trigger_shutter();
 }
 
