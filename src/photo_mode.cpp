@@ -26,6 +26,7 @@ void photo_mode_init(void) {
     photo_state.angle_per_photo = 0;
     photo_state.steps_per_photo = 0;
     photo_state.total_steps_moved = 0;
+    photo_state.compensation_steps = 0;
     photo_state.focus_start_time = 0;
     photo_state.shutter_start_time = 0;
     photo_state.focus_triggered = false;
@@ -267,7 +268,7 @@ void photo_mode_handle_rotating(void) {
 
             // 检查是否已经拍摄完所有照片
             // 最后一次旋转是为了复位，不需要拍摄
-            if (photo_state.current_photo > photo_state.total_photos) {
+            if (photo_state.current_photo >= photo_state.total_photos) {
                 photo_mode_finish_session();
             } else {
                 // 进入拍摄前停留状态
@@ -388,6 +389,11 @@ void photo_mode_calculate_parameters(void) {
     // 计算每张照片需要的步数
     photo_state.steps_per_photo = photo_mode_angle_to_steps(photo_interval);
     photo_state.total_steps_moved = 0;
+
+    // 计算角度补偿步数：基础补偿 + 暂停次数补偿
+    // 暂停次数等于总照片数（每拍一张照片后都会暂停）
+    photo_state.compensation_steps = ANGLE_COMPENSATION_BASE +
+                                   photo_state.total_photos * ANGLE_COMPENSATION_PER_STOP;
 }
 
 /**
@@ -426,8 +432,16 @@ void photo_mode_start_rotation(void) {
     stepper_motor_set_direction(config_get_motor_direction() == MOTOR_DIRECTION_CW ? CLOCKWISE : COUNTER_CLOCKWISE);
     stepper_motor_set_custom_speed(config_get_motor_speed());
 
+    // 计算旋转步数
+    uint32_t rotation_steps = photo_state.steps_per_photo;
+
+    // 如果这是最后一次旋转（复位旋转），应用角度补偿
+    if (photo_state.current_photo >= photo_state.total_photos) {
+        rotation_steps += photo_state.compensation_steps;
+    }
+
     // 开始旋转指定步数
-    stepper_motor_rotate_steps(photo_state.steps_per_photo);
+    stepper_motor_rotate_steps(rotation_steps);
 }
 
 /**

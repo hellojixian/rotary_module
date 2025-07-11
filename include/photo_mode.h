@@ -8,6 +8,10 @@
 #include "buzzer.h"
 #include "ui_display.h"
 
+// 角度补偿参数
+#define ANGLE_COMPENSATION_BASE 0        // 基础补偿步数
+#define ANGLE_COMPENSATION_PER_STOP 4     // 每次暂停的补偿步数
+
 // 拍照模式状态枚举
 typedef enum {
     PHOTO_STATE_IDLE = 0,           // 空闲状态
@@ -44,6 +48,7 @@ typedef struct {
     // 电机控制相关
     uint32_t steps_per_photo;
     uint32_t total_steps_moved;
+    uint32_t compensation_steps;      // 角度补偿步数
 
     // 相机触发相关
     unsigned long focus_start_time;
