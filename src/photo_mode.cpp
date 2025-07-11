@@ -267,7 +267,7 @@ void photo_mode_handle_rotating(void) {
 
             // 检查是否已经拍摄完所有照片
             // 最后一次旋转是为了复位，不需要拍摄
-            if (photo_state.current_photo >= photo_state.total_photos) {
+            if (photo_state.current_photo > photo_state.total_photos) {
                 photo_mode_finish_session();
             } else {
                 // 进入拍摄前停留状态
