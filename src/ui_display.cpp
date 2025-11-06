@@ -247,8 +247,15 @@ void ui_draw_photo_running(uint8_t current_photo, uint8_t total_photos,
     display.print(F("/"));
     display.print(total_photos);
 
-    // 直接从stepper motor读取当前累计角度
-    uint16_t current_angle = stepper_motor_get_current_angle();
+    // 使用理论角度而不是从步数反推，避免舍入误差导致显示不一致
+    // 理论角度 = 当前照片索引 × 每张照片间隔角度
+    // 注意：current_photo从1开始，第1张在0度，所以实际旋转角度是 (current_photo - 1) × angle_per_photo
+    uint16_t current_angle;
+    if (current_photo > 0) {
+        current_angle = (current_photo - 1) * angle_per_photo;
+    } else {
+        current_angle = 0;
+    }
 
     // 在同一行显示角度信息
     display.print(F("   R:"));

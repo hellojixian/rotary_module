@@ -26,7 +26,9 @@ void photo_mode_init(void) {
     photo_state.angle_per_photo = 0;
     photo_state.steps_per_photo = 0;
     photo_state.total_steps_moved = 0;
-    photo_state.compensation_steps = 0;
+    photo_state.per_rotation_compensation = 0;
+    photo_state.final_compensation = 0;
+    photo_state.remaining_steps = 0;
     photo_state.focus_start_time = 0;
     photo_state.shutter_start_time = 0;
     photo_state.focus_triggered = false;
@@ -386,14 +388,30 @@ void photo_mode_calculate_parameters(void) {
     photo_state.current_angle = 0;
     photo_state.current_photo = 0;
 
-    // 计算每张照片需要的步数
-    photo_state.steps_per_photo = photo_mode_angle_to_steps(photo_interval);
+    // 累积误差补偿：预先计算整个旋转过程的总步数，然后平均分配
+    // 这样可以最大限度减少四舍五入造成的累积误差
+    step_mode_t step_mode = stepper_motor_get_step_mode();
+    uint16_t steps_per_revolution = (step_mode == STEP_MODE_FULL) ?
+                                   STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
+
+    // 计算实际旋转角度对应的总步数（使用四舍五入）
+    // 注意：这里使用 (total_photos - 1) 是因为第一张照片在0度拍摄，不需要旋转
+    uint16_t actual_rotation_angle = photo_interval * (photo_state.total_photos - 1);
+    uint32_t total_rotation_steps = ((uint32_t)actual_rotation_angle * steps_per_revolution + 180) / 360;
+
+    // 平均分配步数到每次旋转（除了第一张照片）
+    photo_state.steps_per_photo = total_rotation_steps / (photo_state.total_photos - 1);
+
+    // 累积精度误差将在最后一次旋转时补偿
+    photo_state.remaining_steps = total_rotation_steps % (photo_state.total_photos - 1);
     photo_state.total_steps_moved = 0;
 
-    // 计算角度补偿步数：基础补偿 + 暂停次数补偿
-    // 暂停次数等于总照片数（每拍一张照片后都会暂停）
-    photo_state.compensation_steps = ANGLE_COMPENSATION_BASE +
-                                   photo_state.total_photos * ANGLE_COMPENSATION_PER_STOP;
+    // 分离补偿计算：
+    // 1. 每次旋转的启停补偿（使用十倍精度版本，支持0.7度等小数）
+    photo_state.per_rotation_compensation = photo_mode_angle_to_steps_x10(ANGLE_COMPENSATION_PER_STOP_DEGREES_X10);
+
+    // 2. 最后一次复位的累积补偿 = 基础补偿 + 累积精度误差
+    photo_state.final_compensation = ANGLE_COMPENSATION_BASE + photo_state.remaining_steps;
 }
 
 /**
@@ -433,12 +451,13 @@ void photo_mode_start_rotation(void) {
     stepper_motor_set_direction(config_get_motor_direction() == MOTOR_DIRECTION_CW ? CLOCKWISE : COUNTER_CLOCKWISE);
     stepper_motor_set_custom_speed(config_get_motor_speed());
 
-    // 计算旋转步数
-    uint32_t rotation_steps = photo_state.steps_per_photo;
+    // 计算旋转步数 = 基础步数 + 每次启停补偿
+    // ✅ 关键修复：每次旋转都应用启停补偿，而不是累积到最后
+    uint32_t rotation_steps = photo_state.steps_per_photo + photo_state.per_rotation_compensation;
 
-    // 如果这是最后一次旋转（复位旋转），应用角度补偿
+    // 如果这是最后一次旋转（复位旋转），额外应用最终累积补偿
     if (photo_state.current_photo >= photo_state.total_photos) {
-        rotation_steps += photo_state.compensation_steps;
+        rotation_steps += photo_state.final_compensation;
     }
 
     // 开始旋转指定步数
@@ -507,8 +526,29 @@ uint32_t photo_mode_angle_to_steps(uint16_t angle) {
     uint16_t steps_per_revolution = (step_mode == STEP_MODE_FULL) ?
                                    STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
 
-    // 计算角度对应的步数
-    return (uint32_t)angle * steps_per_revolution / 360;
+    // 计算角度对应的步数（使用四舍五入而不是截断）
+    // 公式：(angle × steps_per_revolution + 180) / 360
+    // +180是为了四舍五入（180 = 360/2）
+    return ((uint32_t)angle * steps_per_revolution + 180) / 360;
+}
+
+/**
+ * 角度转换为步数（十倍精度版本）
+ * @param angle_x10 角度×10（单位：0.1度）。例如：7表示0.7度，10表示1.0度
+ * @return 对应的步数
+ */
+uint32_t photo_mode_angle_to_steps_x10(uint16_t angle_x10) {
+    // 根据当前步进模式获取正确的每圈步数
+    step_mode_t step_mode = stepper_motor_get_step_mode();
+    uint16_t steps_per_revolution = (step_mode == STEP_MODE_FULL) ?
+                                   STEPS_PER_REVOLUTION_FULL : STEPS_PER_REVOLUTION_HALF;
+
+    // 计算角度对应的步数（使用四舍五入）
+    // angle_x10单位是0.1度，所以需要除以10才是实际角度
+    // 公式：(angle_x10 × steps_per_revolution + 1800) / 3600
+    // 1800 = 3600/2 用于四舍五入
+    // 3600 = 360 × 10
+    return ((uint32_t)angle_x10 * steps_per_revolution + 1800) / 3600;
 }
 
 /**

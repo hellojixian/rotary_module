@@ -9,8 +9,12 @@
 #include "ui_display.h"
 
 // 角度补偿参数
-#define ANGLE_COMPENSATION_BASE 0        // 基础补偿步数
-#define ANGLE_COMPENSATION_PER_STOP 4     // 每次暂停的补偿步数
+// 每次启停会因机械阻力和惯性损失约0.5-1度
+// 使用十倍整数法避免浮点运算：7 = 0.7度, 10 = 1.0度, 15 = 1.5度
+// 全步模式：0.7度 ≈ 3.98步 ≈ 4步, 1度 ≈ 5.69步 ≈ 6步
+// 半步模式：0.7度 ≈ 7.96步 ≈ 8步, 1度 ≈ 11.38步 ≈ 11步
+#define ANGLE_COMPENSATION_BASE 0                       // 基础补偿步数
+#define ANGLE_COMPENSATION_PER_STOP_DEGREES_X10 7      // 每次暂停补偿角度×10 (7=0.7度)
 
 // 拍照模式状态枚举
 typedef enum {
@@ -48,7 +52,9 @@ typedef struct {
     // 电机控制相关
     uint32_t steps_per_photo;
     uint32_t total_steps_moved;
-    uint32_t compensation_steps;      // 角度补偿步数
+    uint32_t per_rotation_compensation;  // 每次旋转的启停补偿步数
+    uint32_t final_compensation;         // 最后一次复位的累积补偿步数
+    uint32_t remaining_steps;            // 累积精度误差补偿步数
 
     // 相机触发相关
     unsigned long focus_start_time;
@@ -92,6 +98,7 @@ void photo_mode_update_display(void);
 
 // 角度和步数转换函数
 uint32_t photo_mode_angle_to_steps(uint16_t angle);
+uint32_t photo_mode_angle_to_steps_x10(uint16_t angle_x10);  // 十倍精度版本 (angle_x10单位: 0.1度)
 uint16_t photo_mode_steps_to_angle(uint32_t steps);
 
 #endif // PHOTO_MODE_H
